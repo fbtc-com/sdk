@@ -31,9 +31,9 @@ const SUPPORTED_CHAINS: Record<number, Chain> = {
 
 function resolveRpcUrl(chainId: number): string | undefined {
   if (chainId === mantle.id) {
-    return import.meta.env.MANTLE_RPC_URL || undefined;
+    return import.meta.env.VITE_PUBLIC_MANTLE_RPC_URL || undefined;
   }
-  return import.meta.env.ETH_RPC_URL || undefined;
+  return import.meta.env.VITE_PUBLIC_ETH_RPC_URL || undefined;
 }
 
 function makePublicClient(chainId: number): PublicClient {

@@ -82,6 +82,13 @@ export const AAVE_FBTC_MARKETS: Record<number, AaveFbtcMarket> = {
     AAVE_FBTC_MARKETS_BY_NETWORK["mantle-mainnet"],
 };
 
+/**
+ * Look up the Aave FBTC market for a networkId.
+ *
+ * @throws {Error} If `networkId` is not a supported FbtcNetworkId
+ *   (`ethereum-mainnet` | `mantle-mainnet`). Callers that need a soft miss
+ *   should check `isFbtcNetworkId` first or catch this error.
+ */
 export function getAaveFbtcMarketByNetworkId(
   networkId: string = DEFAULT_NETWORK_ID,
 ): AaveFbtcMarket {

@@ -7,6 +7,8 @@ declare module "*.svg" {
 
 interface ImportMetaEnv {
   readonly VITE_WALLETCONNECT_PROJECT_ID: string;
+  readonly VITE_PUBLIC_ETH_RPC_URL?: string;
+  readonly VITE_PUBLIC_MANTLE_RPC_URL?: string;
 }
 
 interface ImportMeta {

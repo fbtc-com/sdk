@@ -27,7 +27,10 @@ yarn workspace @functionFBTC/example-agent-chat dev
 ```
 
 Configure the model provider and wallet connection values using the existing
-environment variables before starting the app.
+environment variables before starting the app. See `.env.example`:
+
+- `ETH_RPC_URL` / `MANTLE_RPC_URL` — server-only (agent tool reads; may use keyed RPCs)
+- `VITE_PUBLIC_ETH_RPC_URL` / `VITE_PUBLIC_MANTLE_RPC_URL` — browser-only public RPCs
 
 Example prompts:
 

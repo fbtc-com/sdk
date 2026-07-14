@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Expose ETH_RPC_URL / MANTLE_RPC_URL to the browser (in addition to VITE_*).
-  envPrefix: ['VITE_', 'ETH_', 'MANTLE_'],
+  // Only VITE_* is exposed to the browser (Vite default). Do not add ETH_/MANTLE_
+  // — those are server-only and may contain keyed Alchemy URLs.
   plugins: [react(), tailwindcss()],
   server: {
     port: 5174,

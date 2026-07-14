@@ -2,8 +2,10 @@ import { getDefaultConfig } from 'connectkit';
 import { createConfig, createStorage, http } from 'wagmi';
 import { mainnet, mantle } from 'wagmi/chains';
 
-const ethRpc = import.meta.env.ETH_RPC_URL;
-const mantleRpc = import.meta.env.MANTLE_RPC_URL;
+// Browser-only public RPCs. Never reuse server ETH_RPC_URL / MANTLE_RPC_URL
+// (those may embed Alchemy keys and must stay out of the client bundle).
+const ethRpc = import.meta.env.VITE_PUBLIC_ETH_RPC_URL;
+const mantleRpc = import.meta.env.VITE_PUBLIC_MANTLE_RPC_URL;
 
 export const wagmiConfig = createConfig(
   getDefaultConfig({

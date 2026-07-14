@@ -27,6 +27,7 @@ export function getChainConfig(chainId: number): ChainConfig {
  *
  * Ethereum and Mantle URLs never cross-fallback — FBTC addresses currently
  * match on both chains, so a wrong RPC silently returns the other chain's balance.
+ * Unknown or omitted chainId returns undefined (no silent default across chains).
  */
 export function resolveRpcUrl(rpcUrl?: string, chainId?: number): string | undefined {
   if (rpcUrl) return rpcUrl;
@@ -36,7 +37,7 @@ export function resolveRpcUrl(rpcUrl?: string, chainId?: number): string | undef
   if (chainId === mainnet.id) {
     return process.env.ETH_RPC_URL || undefined;
   }
-  return process.env.ETH_RPC_URL || process.env.MANTLE_RPC_URL || undefined;
+  return undefined;
 }
 
 export function makePublicClient(chainId: number, rpcUrl?: string): PublicClient {
