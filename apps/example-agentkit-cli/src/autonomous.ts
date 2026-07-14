@@ -16,7 +16,8 @@ silenceAgentkitAnalytics();
 
 const TASKS = [
   "What is my Function FBTC balance on Ethereum mainnet?",
-  "Show the Aave V3 FBTC reserve details on Ethereum.",
+  "Show the Aave V3 Ethereum FBTC reserve details.",
+  "Show the Aave V3 Mantle FBTC reserve details.",
 ];
 
 const TASK_TIMEOUT_MS = Number(process.env.TASK_TIMEOUT_MS) || 60_000;
@@ -32,8 +33,7 @@ async function main() {
     process.exit(1);
   }
 
-  const networkId = process.env.NETWORK_ID || "ethereum-mainnet";
-  const { walletProvider, tools } = await initAgent(networkId);
+  const { walletProvider, tools, networkId, rpcUrls } = await initAgent();
 
   console.log(`Available tools (${tools.length}):`);
   for (const tool of tools) {
@@ -47,15 +47,20 @@ async function main() {
     tools,
     checkpointSaver: memory,
     messageModifier:
-      "You are a Function FBTC agent. " +
+      "You are a Function FBTC agent for Aave V3 Ethereum and Aave V3 Mantle. " +
       "Execute the requested operations and report results clearly. " +
       "For read-only operations, proceed without confirmation. " +
-      "FBTC is the ERC-20 at 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum (chainId 1) and Mantle (chainId 5000).",
+      "Pass networkId ethereum-mainnet (Aave V3 Ethereum) or mantle-mainnet (Aave V3 Mantle); default ethereum-mainnet. " +
+      "Always name the network in replies — never say only \"Aave V3\". " +
+      "FBTC is the ERC-20 at 0xc96de26018a54d51c097160568752c4e3bd6c364 on both Ethereum and Mantle.",
   });
 
   const address = walletProvider.getAddress();
   console.log(`\nWallet: ${address}`);
-  console.log(`Network: ${networkId}`);
+  console.log(`Wallet NETWORK_ID: ${networkId}`);
+  console.log(
+    `RPCs: ethereum-mainnet=${rpcUrls["ethereum-mainnet"] ? "set" : "unset"}, mantle-mainnet=${rpcUrls["mantle-mainnet"] ? "set" : "unset"}`,
+  );
   console.log(
     `Model: ${process.env.MODEL_PROVIDER || "anthropic"} / ${process.env.MODEL_NAME || "(default)"}\n`,
   );

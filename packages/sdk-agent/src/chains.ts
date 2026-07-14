@@ -23,15 +23,20 @@ export function getChainConfig(chainId: number): ChainConfig {
 }
 
 /**
- * Prefer `rpcUrl`, then chain-specific env, then shared RPC env, then the chain default.
- * Public endpoints frequently time out for ERC-20 reads.
+ * Resolve a read RPC for the target chain.
+ *
+ * Ethereum and Mantle URLs never cross-fallback — FBTC addresses currently
+ * match on both chains, so a wrong RPC silently returns the other chain's balance.
  */
 export function resolveRpcUrl(rpcUrl?: string, chainId?: number): string | undefined {
   if (rpcUrl) return rpcUrl;
   if (chainId === mantle.id) {
-    return process.env.MANTLE_RPC_URL || process.env.RPC_URL || undefined;
+    return process.env.MANTLE_RPC_URL || undefined;
   }
-  return process.env.RPC_URL || process.env.ETH_RPC_URL || undefined;
+  if (chainId === mainnet.id) {
+    return process.env.ETH_RPC_URL || undefined;
+  }
+  return process.env.ETH_RPC_URL || process.env.MANTLE_RPC_URL || undefined;
 }
 
 export function makePublicClient(chainId: number, rpcUrl?: string): PublicClient {

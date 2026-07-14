@@ -9,28 +9,28 @@ const features = [
     index: '01',
     title: 'Review the reserve',
     description:
-      'Inspect the official FBTC reserve in the Aave V3 Ethereum Core market.',
-    example: '"Check the FBTC reserve on Aave V3"',
+      'Inspect the FBTC reserve on Aave V3 Ethereum or Aave V3 Mantle.',
+    example: '"Check the FBTC reserve on Aave V3 Ethereum"',
   },
   {
     index: '02',
     title: 'Approve FBTC',
     description:
-      'Approve the Aave V3 Pool to transfer exactly the FBTC amount you choose.',
-    example: '"Approve 0.1 FBTC for Aave V3"',
+      'Approve the Aave V3 Pool on Ethereum or Mantle to transfer the FBTC amount you choose.',
+    example: '"Approve 0.1 FBTC for Aave V3 Mantle"',
   },
   {
     index: '03',
     title: 'Supply to Aave V3',
     description:
-      'Call Pool.supply on Ethereum and receive the corresponding Aave position.',
-    example: '"Supply 0.1 FBTC to Aave V3"',
+      'Call Pool.supply on Ethereum or Mantle and receive the corresponding Aave position.',
+    example: '"Supply 0.1 FBTC to Aave V3 Ethereum"',
   },
   {
     index: '04',
-    title: 'Stay on mainnet',
+    title: 'Pick the network',
     description:
-      'Automatically request Ethereum Mainnet before submitting transactions.',
+      'Use Ethereum Mainnet or Mantle — the wallet switches to the prepared transaction chain.',
     example: '"Confirm I am on the correct network"',
   },
   {
@@ -45,7 +45,7 @@ const features = [
     title: 'Keep control',
     description:
       'Function prepares calldata; your wallet remains in control of every transaction.',
-    example: '"Check my FBTC balance"',
+    example: '"Check my FBTC balance on Mantle"',
   },
 ];
 
@@ -78,8 +78,9 @@ export function App() {
               <span className="block">to work.</span>
             </h1>
             <p className="mt-8 max-w-2xl text-base leading-7 text-[var(--color-text-muted)] sm:text-lg">
-              Meet the Function assistant for FBTC. Review the official Aave V3
-              reserve and supply with transparent wallet confirmation.
+              Meet the Function assistant for FBTC on Aave V3 Ethereum and
+              Mantle. Review the reserve and supply with transparent wallet
+              confirmation.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <button

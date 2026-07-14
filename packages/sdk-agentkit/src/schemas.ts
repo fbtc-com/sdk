@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+import { DEFAULT_NETWORK_ID, SUPPORTED_NETWORK_IDS } from "./networks";
+
+const networkIdField = z
+  .enum(["ethereum-mainnet", "mantle-mainnet"])
+  .optional()
+  .default(DEFAULT_NETWORK_ID)
+  .describe(
+    `Network ID for the FBTC / Aave operation. Supported: ${SUPPORTED_NETWORK_IDS.join(", ")}. ` +
+      `Choose from the user's instruction (e.g. Mantle → mantle-mainnet). ` +
+      `If the user does not name a network, use ${DEFAULT_NETWORK_ID}.`,
+  );
+
 export const GetFbtcBalanceSchema = z.object({
   address: z
     .string()
@@ -8,22 +20,11 @@ export const GetFbtcBalanceSchema = z.object({
     .describe(
       "EVM address to check FBTC balance for. If omitted, uses the connected wallet address.",
     ),
-  chainId: z
-    .number()
-    .optional()
-    .describe(
-      "Chain ID to read FBTC on. Supported: 1=Ethereum, 5000=Mantle. Defaults to the wallet network when supported, otherwise Ethereum (1).",
-    ),
+  networkId: networkIdField,
 });
 
 export const GetAaveFbtcReserveSchema = z.object({
-  chainId: z
-    .number()
-    .optional()
-    .default(1)
-    .describe(
-      "Aave market chain ID. Supported: 1=Ethereum Core, 5000=Mantle. Defaults to 1 (Ethereum).",
-    ),
+  networkId: networkIdField,
 });
 
 export const SupplyFbtcToAaveSchema = z.object({
@@ -33,4 +34,5 @@ export const SupplyFbtcToAaveSchema = z.object({
     .refine((v) => /^\d+(\.\d+)?$/.test(v), "Amount must be a numeric string")
     .refine((v) => parseFloat(v) > 0, "Amount must be positive")
     .refine((v) => parseFloat(v) < 1000, "Amount must be under 1000 BTC"),
+  networkId: networkIdField,
 });

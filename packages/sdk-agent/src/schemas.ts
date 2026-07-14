@@ -29,7 +29,7 @@ export const aaveChainId = z
   .optional()
   .default(1)
   .describe(
-    'Aave market chain ID. Supported: 1=Ethereum Core, 5000=Mantle. Defaults to 1 (Ethereum).',
+    'Aave market chain ID. Supported: 1=Ethereum, 5000=Mantle. Defaults to 1 (Ethereum).',
   );
 
 // ─── Zod Schemas ─────────────────────────────────────────────────────

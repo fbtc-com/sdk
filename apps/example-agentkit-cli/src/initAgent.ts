@@ -4,17 +4,45 @@ import {
   walletActionProvider,
 } from "@coinbase/agentkit";
 import { getLangChainTools } from "@coinbase/agentkit-langchain";
-import { fbtcActionProvider } from "@functionFBTC/sdk-agentkit";
+import {
+  DEFAULT_NETWORK_ID,
+  type FbtcNetworkId,
+  fbtcActionProvider,
+  isFbtcNetworkId,
+  NETWORK_ID_TO_VIEM_CHAIN,
+} from "@functionFBTC/sdk-agentkit";
 import type { Chain } from "viem";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { CHAINS } from "./config.js";
+/**
+ * Load both supported network RPCs at startup. Read tools pick a networkId
+ * from the user instruction (default: ethereum-mainnet).
+ */
+export function loadNetworkRpcUrls(): Record<FbtcNetworkId, string | undefined> {
+  return {
+    "ethereum-mainnet": process.env.ETH_RPC_URL || undefined,
+    "mantle-mainnet": process.env.MANTLE_RPC_URL || undefined,
+  };
+}
+
+/**
+ * Wallet / write network. Defaults to ethereum-mainnet when unset.
+ */
+export function loadWalletNetworkId(): FbtcNetworkId {
+  const raw = process.env.NETWORK_ID || DEFAULT_NETWORK_ID;
+  if (!isFbtcNetworkId(raw)) {
+    throw new Error(
+      `Unsupported NETWORK_ID: ${raw}. Use ethereum-mainnet or mantle-mainnet.`,
+    );
+  }
+  return raw;
+}
 
 /**
  * ViemWalletProvider builds its own publicClient with `http()` (no URL),
- * which falls back to `chain.rpcUrls.default`. Point that at RPC_URL so
- * gas estimation / receipt waits don't hit flaky public endpoints.
+ * which falls back to `chain.rpcUrls.default`. Point that at the wallet
+ * network's RPC so gas estimation / receipt waits don't hit flaky defaults.
  */
 function chainWithRpc(chain: Chain, rpcUrl?: string): Chain {
   if (!rpcUrl) return chain;
@@ -28,25 +56,19 @@ function chainWithRpc(chain: Chain, rpcUrl?: string): Chain {
   };
 }
 
-export async function initAgent(networkId: string) {
-  const baseChain = CHAINS[networkId];
-  if (!baseChain) {
-    throw new Error(`Unsupported network: ${networkId}. Use one of: ${Object.keys(CHAINS).join(", ")}`);
-  }
-
-  const rpcUrl = process.env.RPC_URL;
-  const ethRpcUrl =
-    process.env.ETH_RPC_URL ||
-    (networkId === "ethereum-mainnet" ? rpcUrl : undefined);
-  const mantleRpcUrl =
-    process.env.MANTLE_RPC_URL ||
-    (networkId === "mantle-mainnet" ? rpcUrl : undefined);
-  const chain = chainWithRpc(baseChain, rpcUrl);
-  const account = privateKeyToAccount(process.env.WALLET_PRIVATE_KEY as `0x${string}`);
+export async function initAgent(walletNetworkId?: FbtcNetworkId) {
+  const networkId = walletNetworkId ?? loadWalletNetworkId();
+  const rpcUrls = loadNetworkRpcUrls();
+  const walletRpcUrl = rpcUrls[networkId];
+  const baseChain = NETWORK_ID_TO_VIEM_CHAIN[networkId];
+  const chain = chainWithRpc(baseChain, walletRpcUrl);
+  const account = privateKeyToAccount(
+    process.env.WALLET_PRIVATE_KEY as `0x${string}`,
+  );
   const walletClient = createWalletClient({
     account,
     chain,
-    transport: http(rpcUrl, { timeout: 60_000 }),
+    transport: http(walletRpcUrl, { timeout: 60_000 }),
   });
 
   // Dual viem versions (workspace root vs local) cause type mismatch
@@ -57,14 +79,11 @@ export async function initAgent(networkId: string) {
     walletProvider,
     actionProviders: [
       walletActionProvider(),
-      fbtcActionProvider({
-        rpcUrl: ethRpcUrl,
-        mantleRpcUrl,
-      }),
+      fbtcActionProvider({ rpcUrls }),
     ],
   });
 
   const tools = await getLangChainTools(agentkit);
 
-  return { walletProvider, tools };
+  return { walletProvider, tools, networkId, rpcUrls };
 }

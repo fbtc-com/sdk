@@ -10,26 +10,38 @@ import type { Address } from "viem";
 import { z } from "zod";
 
 import {
-  AAVE_FBTC_MARKETS,
   buildAaveSupplyFbtcTransactions,
   FBTC_DECIMALS,
-  getAaveFbtcMarket,
   getAaveFbtcMarketByNetworkId,
   getAaveFbtcReserveDetails,
 } from "./aave";
-import { isFbtcSupportedNetwork, resolveNetwork } from "./networks";
+import {
+  DEFAULT_NETWORK_ID,
+  type FbtcNetworkId,
+  isFbtcSupportedNetwork,
+  resolveNetwork,
+  resolveNetworkId,
+  SUPPORTED_NETWORK_IDS,
+} from "./networks";
 import {
   GetAaveFbtcReserveSchema,
   GetFbtcBalanceSchema,
   SupplyFbtcToAaveSchema,
 } from "./schemas";
-import { formatError, formatSuccess, getErc20Balance } from "./utils";
+import {
+  formatError,
+  formatSuccess,
+  getErc20Balance,
+  type RpcUrlByNetwork,
+} from "./utils";
 
 export interface FbtcActionProviderOptions {
-  /** Ethereum mainnet RPC used for chainId 1 reads (e.g. get_fbtc_balance). */
-  rpcUrl?: string;
-  /** Mantle RPC used for chainId 5000 reads. Never reuse rpcUrl for Mantle. */
-  mantleRpcUrl?: string;
+  /**
+   * RPC endpoints keyed by networkId. Load both ethereum-mainnet and
+   * mantle-mainnet at startup so reads can target either network from
+   * the user's instruction.
+   */
+  rpcUrls?: RpcUrlByNetwork;
 }
 
 /**
@@ -47,33 +59,38 @@ export interface FbtcActionProviderOptions {
  *   walletProvider,
  *   actionProviders: [
  *     fbtcActionProvider({
- *       rpcUrl: process.env.ETH_RPC_URL ?? process.env.RPC_URL,
- *       mantleRpcUrl: process.env.MANTLE_RPC_URL,
+ *       rpcUrls: {
+ *         'ethereum-mainnet': process.env.ETH_RPC_URL,
+ *         'mantle-mainnet': process.env.MANTLE_RPC_URL,
+ *       },
  *     }),
  *   ],
  * });
  * ```
  */
 export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
-  private readonly rpcUrl?: string;
-  private readonly mantleRpcUrl?: string;
+  private readonly rpcUrls: RpcUrlByNetwork;
 
   constructor(options: FbtcActionProviderOptions = {}) {
     super("fbtc", []);
-    this.rpcUrl = options.rpcUrl;
-    this.mantleRpcUrl = options.mantleRpcUrl;
+    this.rpcUrls = options.rpcUrls ?? {};
   }
 
   supportsNetwork = (network: Network): boolean => {
     return isFbtcSupportedNetwork(network);
   };
 
+  private resolveTargetNetworkId(raw?: string): FbtcNetworkId {
+    return resolveNetworkId(raw) ?? DEFAULT_NETWORK_ID;
+  }
+
   @CreateAction({
     name: "get_fbtc_balance",
     description:
-      "Check the Function FBTC ERC-20 balance for an address on Ethereum (chainId 1) or Mantle (chainId 5000). " +
-      "FBTC token address: 0xc96de26018a54d51c097160568752c4e3bd6c364. " +
-      "Optional chainId defaults to the wallet network when supported, otherwise Ethereum.",
+      "Check the Function FBTC ERC-20 balance for an address. " +
+      `Pass networkId from the user instruction (${SUPPORTED_NETWORK_IDS.join(" | ")}). ` +
+      `If the user does not name a network, use ${DEFAULT_NETWORK_ID}. ` +
+      "FBTC token address: 0xc96de26018a54d51c097160568752c4e3bd6c364.",
     schema: GetFbtcBalanceSchema,
   })
   async getFbtcBalance(
@@ -82,17 +99,15 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
   ): Promise<string> {
     try {
       const address = (args.address || walletProvider.getAddress()) as Address;
-      const walletNetwork = resolveNetwork(walletProvider.getNetwork());
-      const chainId =
-        args.chainId ?? walletNetwork?.chainId ?? AAVE_FBTC_MARKETS[1].chainId;
-      const market = getAaveFbtcMarket(chainId);
+      const networkId = this.resolveTargetNetworkId(args.networkId);
+      const market = getAaveFbtcMarketByNetworkId(networkId);
 
       const { formatted } = await getErc20Balance(
         market.fbtcAddress,
-        market.chainId,
+        networkId,
         address,
         FBTC_DECIMALS,
-        { rpcUrl: this.rpcUrl, mantleRpcUrl: this.mantleRpcUrl },
+        this.rpcUrls,
       );
 
       return formatSuccess("get_fbtc_balance", {
@@ -100,8 +115,7 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
         balance: formatted,
         token: "FBTC",
         tokenAddress: market.fbtcAddress,
-        chain: market.networkId,
-        chainId: market.chainId,
+        networkId: market.networkId,
       });
     } catch (error) {
       return formatError("get_fbtc_balance", error);
@@ -111,8 +125,9 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
   @CreateAction({
     name: "get_aave_fbtc_reserve",
     description:
-      "Return the canonical FBTC reserve and Aave V3 Pool details for Ethereum Core (chainId 1) or Mantle (chainId 5000). " +
-      "Use this before supplying FBTC when the user asks for reserve details.",
+      "Return the canonical FBTC reserve and Aave V3 Pool details. " +
+      `Pass networkId from the user instruction (${SUPPORTED_NETWORK_IDS.join(" | ")}). ` +
+      `If the user does not name a network, use ${DEFAULT_NETWORK_ID}.`,
     schema: GetAaveFbtcReserveSchema,
   })
   async getAaveFbtcReserve(
@@ -120,9 +135,10 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
     args: z.infer<typeof GetAaveFbtcReserveSchema>,
   ): Promise<string> {
     try {
+      const networkId = this.resolveTargetNetworkId(args.networkId);
       return formatSuccess(
         "get_aave_fbtc_reserve",
-        getAaveFbtcReserveDetails(args.chainId),
+        getAaveFbtcReserveDetails(networkId),
       );
     } catch (error) {
       return formatError("get_aave_fbtc_reserve", error);
@@ -132,8 +148,10 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
   @CreateAction({
     name: "supply_fbtc_to_aave",
     description:
-      "Supply Function FBTC to Aave V3 Ethereum Core or Aave V3 Mantle. " +
-      "Requires the wallet to be on ethereum-mainnet or mantle-mainnet. " +
+      "Supply Function FBTC to Aave V3. " +
+      `Pass networkId from the user instruction (${SUPPORTED_NETWORK_IDS.join(" | ")}). ` +
+      `If the user does not name a network, use ${DEFAULT_NETWORK_ID}. ` +
+      "The wallet must already be on that same networkId. " +
       "Sends two transactions: ERC-20 approve (exact amount) then Pool.supply. " +
       "Confirm with the user before calling.",
     schema: SupplyFbtcToAaveSchema,
@@ -143,22 +161,22 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
     args: z.infer<typeof SupplyFbtcToAaveSchema>,
   ): Promise<string> {
     try {
-      const resolved = resolveNetwork(walletProvider.getNetwork());
-      const market = resolved
-        ? getAaveFbtcMarketByNetworkId(resolved.networkId)
-        : null;
-      if (!market) {
+      const networkId = this.resolveTargetNetworkId(args.networkId);
+      const walletNetwork = resolveNetwork(walletProvider.getNetwork());
+      if (!walletNetwork || walletNetwork.networkId !== networkId) {
         return formatError(
           "supply_fbtc_to_aave",
-          "FBTC Aave supply requires ethereum-mainnet or mantle-mainnet. Switch NETWORK_ID to a supported network.",
+          `FBTC Aave supply for ${networkId} requires the wallet on ${networkId}. ` +
+            `Current wallet networkId: ${walletNetwork?.networkId ?? "unknown"}.`,
         );
       }
 
+      const market = getAaveFbtcMarketByNetworkId(networkId);
       const account = walletProvider.getAddress() as Address;
       const { approve, supply } = buildAaveSupplyFbtcTransactions(
         args.amount,
         account,
-        market.chainId,
+        networkId,
       );
 
       const approveTxHash = await walletProvider.sendTransaction({
@@ -178,7 +196,6 @@ export class FbtcActionProvider extends ActionProvider<EvmWalletProvider> {
         token: "FBTC",
         tokenAddress: market.fbtcAddress,
         onBehalfOf: account,
-        chainId: market.chainId,
         networkId: market.networkId,
         approveTxHash,
         supplyTxHash,

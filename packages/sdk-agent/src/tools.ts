@@ -122,15 +122,16 @@ export const getTokenBalance: ToolDefinition<
     symbol: string;
     tokenAddress: string;
     chain: string;
+    chainId: number;
     error?: string;
   }
 > = {
   name: 'get_token_balance',
   description:
     'Check the balance of any ERC-20 token for a wallet address. ' +
-    'Requires the token contract address (0x...). ' +
-    'Reads symbol and decimals directly from the contract. ' +
-    'Use FBTC address 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum (chainId 1) or Mantle (chainId 5000).',
+    'Requires the token contract address (0x...) and chainId. ' +
+    'REQUIRED: pass chainId 1 for Ethereum or chainId 5000 for Mantle when the user names a network. ' +
+    'Use FBTC address 0xc96de26018a54d51c097160568752c4e3bd6c364.',
   parameters: TokenBalanceSchema as Record<string, unknown>,
   schema: TokenBalanceZod,
   execute: async (params) => {
@@ -139,6 +140,15 @@ export const getTokenBalance: ToolDefinition<
     const client = makePublicClient(config.chainId);
 
     try {
+      const reportedChainId = await client.getChainId();
+      if (reportedChainId !== config.chainId) {
+        throw new Error(
+          `RPC chain mismatch: expected chainId ${config.chainId} (${config.name}), ` +
+            `but the RPC reported ${reportedChainId}. ` +
+            `Set ${config.chainId === 5000 ? 'MANTLE_RPC_URL' : 'ETH_RPC_URL'} to an endpoint on the correct chain.`,
+        );
+      }
+
       const [balance, decimals, symbol] = await Promise.all([
         client.readContract({
           address: tokenAddress as Address,
@@ -162,6 +172,7 @@ export const getTokenBalance: ToolDefinition<
         symbol,
         tokenAddress,
         chain: config.name,
+        chainId: config.chainId,
       };
     } catch (error) {
       return {
@@ -169,6 +180,7 @@ export const getTokenBalance: ToolDefinition<
         symbol: 'UNKNOWN',
         tokenAddress,
         chain: config.name,
+        chainId: config.chainId,
         error: error instanceof Error ? error.message : String(error),
       };
     }

@@ -1,62 +1,61 @@
 import type { Address } from "viem";
 import { createPublicClient, erc20Abi, formatUnits, http } from "viem";
-import { mantle } from "viem/chains";
 
-import { getViemChainByChainId } from "./networks";
+import {
+  type FbtcNetworkId,
+  getViemChainByNetworkId,
+  isFbtcNetworkId,
+} from "./networks";
 
-export interface RpcUrlOptions {
-  /** Ethereum mainnet RPC used for chainId 1 reads. */
-  rpcUrl?: string;
-  /** Mantle RPC used for chainId 5000 reads. */
-  mantleRpcUrl?: string;
-}
+/** Per-networkId RPC endpoints loaded at process start. */
+export type RpcUrlByNetwork = Partial<Record<FbtcNetworkId, string>>;
 
 /**
- * Resolve a read RPC for the target chain.
- *
- * Ethereum and Mantle URLs are never cross-fallback: passing an Ethereum
- * endpoint into a Mantle balanceOf would silently return the wrong chain's
- * balance (FBTC addresses currently match across both chains).
+ * Resolve the RPC URL for a networkId.
+ * Ethereum and Mantle URLs never cross-fallback.
  */
 export function resolveRpcUrl(
-  chainId: number,
-  options: RpcUrlOptions = {},
+  networkId: FbtcNetworkId,
+  rpcUrls: RpcUrlByNetwork = {},
 ): string | undefined {
-  if (chainId === mantle.id) {
-    return options.mantleRpcUrl || process.env.MANTLE_RPC_URL || undefined;
+  if (networkId === "mantle-mainnet") {
+    return rpcUrls["mantle-mainnet"] || process.env.MANTLE_RPC_URL || undefined;
   }
-  return (
-    options.rpcUrl ||
-    process.env.ETH_RPC_URL ||
-    process.env.RPC_URL ||
-    undefined
-  );
+  return rpcUrls["ethereum-mainnet"] || process.env.ETH_RPC_URL || undefined;
 }
 
 /**
- * Reads an arbitrary ERC-20 token balance via a public client.
- * Pass chain-specific RPC URLs; never reuse an Ethereum URL for Mantle reads.
+ * Reads an ERC-20 balance on the given networkId.
+ * Verifies the RPC node's chain matches the network before reading.
  */
 export async function getErc20Balance(
   tokenAddress: Address,
-  chainId: number,
+  networkId: FbtcNetworkId,
   address: Address,
   decimals: number,
-  rpcOptions?: string | RpcUrlOptions,
+  rpcUrls: RpcUrlByNetwork = {},
 ): Promise<{ balance: bigint; formatted: string; decimals: number }> {
-  const chain = getViemChainByChainId(chainId);
-  if (!chain) {
-    throw new Error(`Unsupported chainId for ERC-20 balance: ${chainId}`);
+  if (!isFbtcNetworkId(networkId)) {
+    throw new Error(`Unsupported networkId for ERC-20 balance: ${networkId}`);
   }
 
-  const options: RpcUrlOptions =
-    typeof rpcOptions === "string" ? { rpcUrl: rpcOptions } : (rpcOptions ?? {});
-  const rpcUrl = resolveRpcUrl(chainId, options);
+  const chain = getViemChainByNetworkId(networkId);
+  const rpcUrl = resolveRpcUrl(networkId, rpcUrls);
 
   const publicClient = createPublicClient({
     chain,
     transport: http(rpcUrl, { timeout: 60_000 }),
   });
+
+  const reportedChainId = await publicClient.getChainId();
+  if (reportedChainId !== chain.id) {
+    throw new Error(
+      `RPC chain mismatch for FBTC balance: expected networkId ${networkId} (chain ${chain.id}), ` +
+        `but the RPC reported ${reportedChainId}. ` +
+        `Set ${networkId === "mantle-mainnet" ? "MANTLE_RPC_URL" : "ETH_RPC_URL"} to an endpoint on the correct network.`,
+    );
+  }
+
   const balance = await publicClient.readContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -71,9 +70,6 @@ export async function getErc20Balance(
   };
 }
 
-/**
- * Format a result string for AgentKit action responses.
- */
 export function formatSuccess(
   action: string,
   details: Record<string, unknown>,

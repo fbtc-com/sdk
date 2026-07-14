@@ -1,5 +1,5 @@
 /**
- * Aave V3 integration for the Function FBTC reserve (Ethereum Core + Mantle).
+ * Aave V3 integration for the Function FBTC reserve (Ethereum + Mantle).
  *
  * The tool prepares unsigned ERC-20 approval and Pool.supply transactions.
  * The connected wallet remains responsible for signing both transactions.
@@ -57,7 +57,7 @@ export const AAVE_FBTC_MARKETS: Record<number, AaveFbtcMarket> = {
     fbtcAddress: FBTC_ETHEREUM_ADDRESS,
     poolAddress: AAVE_V3_ETHEREUM_POOL,
     reserveUrl: AAVE_FBTC_RESERVE_URL,
-    marketLabel: 'Aave V3 Ethereum Core',
+    marketLabel: 'Aave V3 Ethereum',
   },
   5000: {
     chainId: 5000,
@@ -111,7 +111,7 @@ export const getAaveFbtcReserve: ToolDefinition<
 > = {
   name: 'get_aave_fbtc_reserve',
   description:
-    'Return FBTC reserve and Aave V3 Pool details. REQUIRED: pass chainId 1 for Ethereum Core or chainId 5000 for Mantle. Do not omit chainId when the user names a network.',
+    'Return FBTC reserve and Aave V3 Pool details. REQUIRED: pass chainId 1 for Ethereum or chainId 5000 for Mantle. Do not omit chainId when the user names a network.',
   parameters: AaveFbtcReserveSchema as Record<string, unknown>,
   schema: AaveFbtcReserveZod as z.ZodType<z.input<typeof AaveFbtcReserveZod>>,
   execute: async (params) => {
@@ -142,7 +142,7 @@ export const prepareAaveSupplyFbtc: ToolDefinition<
 > = {
   name: 'prepare_aave_supply_fbtc',
   description:
-    'Prepare two transactions to supply FBTC to Aave V3 (Ethereum Core or Mantle): approve the Aave Pool, then call Pool.supply on behalf of the connected wallet. Pass chainId 1 (Ethereum) or 5000 (Mantle).',
+    'Prepare two transactions to supply FBTC to Aave V3 (Ethereum or Mantle): approve the Aave Pool, then call Pool.supply on behalf of the connected wallet. Pass chainId 1 (Ethereum) or 5000 (Mantle).',
   parameters: AaveSupplyFbtcSchema as Record<string, unknown>,
   schema: AaveSupplyFbtcZod as z.ZodType<z.input<typeof AaveSupplyFbtcZod>>,
   execute: async (params) => {

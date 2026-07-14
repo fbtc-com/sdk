@@ -11,10 +11,10 @@ import {
 } from "../aave";
 
 describe("getAaveFbtcReserveDetails", () => {
-  it("returns the canonical Ethereum FBTC reserve details by default", () => {
+  it("returns Ethereum FBTC reserve details by default", () => {
     expect(getAaveFbtcReserveDetails()).toMatchObject({
       protocol: "Aave V3",
-      chainId: 1,
+      networkId: "ethereum-mainnet",
       token: "FBTC",
       tokenAddress: FBTC_ETHEREUM_ADDRESS,
       tokenDecimals: 8,
@@ -22,12 +22,11 @@ describe("getAaveFbtcReserveDetails", () => {
     });
   });
 
-  it("returns the Mantle FBTC reserve details when chainId is 5000", () => {
-    expect(getAaveFbtcReserveDetails(5000)).toMatchObject({
+  it("returns Mantle FBTC reserve details for mantle-mainnet", () => {
+    expect(getAaveFbtcReserveDetails("mantle-mainnet")).toMatchObject({
       protocol: "Aave V3",
-      chainId: 5000,
-      chain: "Mantle",
       networkId: "mantle-mainnet",
+      chain: "Mantle",
       token: "FBTC",
       tokenAddress: FBTC_MANTLE_ADDRESS,
       tokenDecimals: 8,
@@ -39,7 +38,7 @@ describe("getAaveFbtcReserveDetails", () => {
 describe("buildAaveSupplyFbtcTransactions", () => {
   const address = "0x1234567890abcdef1234567890abcdef12345678";
 
-  it("builds exact-amount approve and Pool.supply transactions on Ethereum", () => {
+  it("builds Ethereum approve and Pool.supply by default", () => {
     const { approve, supply, amountRaw } = buildAaveSupplyFbtcTransactions(
       "0.1",
       address,
@@ -71,14 +70,14 @@ describe("buildAaveSupplyFbtcTransactions", () => {
     expect(supplyCall.args?.[3]).toBe(0);
   });
 
-  it("builds Mantle approve and Pool.supply transactions when chainId is 5000", () => {
+  it("builds Mantle approve and Pool.supply for mantle-mainnet", () => {
     const { approve, supply, market } = buildAaveSupplyFbtcTransactions(
       "0.1",
       address,
-      5000,
+      "mantle-mainnet",
     );
 
-    expect(market.chainId).toBe(5000);
+    expect(market.networkId).toBe("mantle-mainnet");
     expect(approve.to.toLowerCase()).toBe(FBTC_MANTLE_ADDRESS.toLowerCase());
     expect(supply.to.toLowerCase()).toBe(AAVE_V3_MANTLE_POOL.toLowerCase());
 

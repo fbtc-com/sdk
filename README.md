@@ -38,7 +38,7 @@ yarn workspace @functionFBTC/example-agentkit-cli start
 ## Capabilities
 
 - Look up Function FBTC token metadata and ERC-20 balances
-- Inspect the Aave V3 Ethereum Core FBTC reserve
+- Inspect the Aave V3 Ethereum FBTC reserve
 - Prepare / execute FBTC supply to Aave V3 (`approve` + `Pool.supply`)
 
 ## Commands

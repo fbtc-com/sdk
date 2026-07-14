@@ -23,7 +23,7 @@ export const FUNCTION_ASSETS: FunctionAsset[] = [
     symbol: 'FBTC',
     name: 'Function Bitcoin',
     description:
-      'Function FBTC ERC-20 on Ethereum mainnet and Mantle. Can be supplied to Aave V3 Ethereum Core or Aave V3 Mantle.',
+      'Function FBTC ERC-20 on Ethereum mainnet and Mantle. Can be supplied to Aave V3 Ethereum or Aave V3 Mantle.',
     decimals: FBTC_DECIMALS,
     isYieldBearing: false,
     addresses: {

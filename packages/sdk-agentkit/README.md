@@ -24,8 +24,19 @@ import { fbtcActionProvider } from '@functionFBTC/sdk-agentkit';
 
 const agentkit = await AgentKit.from({
   walletProvider,
-  actionProviders: [walletActionProvider(), fbtcActionProvider()],
+  actionProviders: [
+    walletActionProvider(),
+    fbtcActionProvider({
+      rpcUrls: {
+        'ethereum-mainnet': process.env.ETH_RPC_URL,
+        'mantle-mainnet': process.env.MANTLE_RPC_URL,
+      },
+    }),
+  ],
 });
 ```
+
+Tools take a `networkId` (`ethereum-mainnet` | `mantle-mainnet`). If the user
+does not name a network, the default is `ethereum-mainnet`.
 
 See `apps/example-agentkit-cli` for a full LangChain chatbot example.

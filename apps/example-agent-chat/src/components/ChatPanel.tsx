@@ -186,15 +186,15 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
   const suggestions = address
     ? [
         'Check the FBTC reserve on Aave V3 Ethereum.',
-        'Supply 0.1 FBTC to Aave V3.',
-        'Check my FBTC balance.',
-        'Explain the two transaction steps for supplying FBTC.',
+        'Supply 0.1 FBTC to Aave V3 Mantle.',
+        'Check my FBTC balance on Ethereum.',
+        'Explain supplying FBTC on Ethereum vs Mantle.',
       ]
     : [
         'Check the FBTC reserve on Aave V3 Ethereum.',
         'What is FBTC?',
-        'How does supplying FBTC to Aave V3 work?',
-        'What should I know before supplying?',
+        'How does supplying FBTC to Aave V3 Ethereum or Mantle work?',
+        'What should I know before supplying on Mantle?',
       ];
 
   return (
@@ -319,13 +319,13 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
               (text.includes('confirmed') || text.includes('submitted'))
             ) {
               followUps.push(
-                'Check my FBTC balance',
-                'Show the Aave FBTC reserve',
+                'Check my FBTC balance on Ethereum',
+                'Show the Aave V3 Ethereum FBTC reserve',
               );
             } else if (text.includes('aave') && text.includes('fbtc')) {
               followUps.push(
-                'Supply 0.1 FBTC to Aave V3',
-                'Check my FBTC balance',
+                'Supply 0.1 FBTC to Aave V3 Ethereum',
+                'Check my FBTC balance on Mantle',
               );
             }
 

@@ -1,6 +1,13 @@
 import { useState } from 'react';
-import { createPublicClient, http } from 'viem';
-import { mainnet } from 'viem/chains';
+import {
+  createPublicClient,
+  http,
+  type Chain,
+  type Hash,
+  type PublicClient,
+  type TransactionReceipt,
+} from 'viem';
+import { mainnet, mantle } from 'viem/chains';
 import { useAccount, useSwitchChain } from 'wagmi';
 
 interface TransactionPromptProps {
@@ -12,10 +19,124 @@ interface TransactionPromptProps {
 }
 
 const METHOD_LABELS = {
-  'aave.supplyFbtc': 'Supply FBTC to Aave V3',
+  'aave.supplyFbtc': 'Supply FBTC to Aave V3 (Ethereum / Mantle)',
 } as const satisfies Record<string, string>;
 
 type MethodName = keyof typeof METHOD_LABELS;
+
+const SUPPORTED_CHAINS: Record<number, Chain> = {
+  [mainnet.id]: mainnet,
+  [mantle.id]: mantle,
+};
+
+function resolveRpcUrl(chainId: number): string | undefined {
+  if (chainId === mantle.id) {
+    return import.meta.env.MANTLE_RPC_URL || undefined;
+  }
+  return import.meta.env.ETH_RPC_URL || undefined;
+}
+
+function makePublicClient(chainId: number): PublicClient {
+  const chain = SUPPORTED_CHAINS[chainId] ?? mainnet;
+  return createPublicClient({
+    chain,
+    transport: http(resolveRpcUrl(chain.id), { timeout: 60_000 }),
+  });
+}
+
+/** Extract a human-readable message from wallet / RPC / viem errors. */
+function formatWalletError(err: unknown): string {
+  if (err == null) return 'Transaction failed';
+  if (typeof err === 'string' && err.trim() && err !== '[object Object]') {
+    return err.trim();
+  }
+
+  const pick = (value: unknown): string | null => {
+    if (typeof value === 'string' && value.trim() && value !== '[object Object]') {
+      return value.trim();
+    }
+    return null;
+  };
+
+  if (typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    const nested =
+      e.data && typeof e.data === 'object'
+        ? (e.data as Record<string, unknown>)
+        : e.cause && typeof e.cause === 'object'
+          ? (e.cause as Record<string, unknown>)
+          : null;
+
+    const candidates = [
+      pick(e.shortMessage),
+      pick(e.details),
+      pick(e.reason),
+      pick(e.message),
+      nested ? pick(nested.shortMessage) : null,
+      nested ? pick(nested.message) : null,
+      nested ? pick(nested.reason) : null,
+      nested ? pick(nested.data) : null,
+    ].filter(Boolean) as string[];
+
+    if (candidates.length > 0) {
+      return candidates[0].replace(/https?:\/\/[^\s]+/g, '').trim();
+    }
+
+    // MetaMask sometimes nests the useful text under data.originalError
+    if (nested?.originalError && typeof nested.originalError === 'object') {
+      const original = formatWalletError(nested.originalError);
+      if (original !== 'Transaction failed') return original;
+    }
+
+    try {
+      const json = JSON.stringify(err);
+      if (json && json !== '{}' && json !== '[object Object]') {
+        return json.length > 280 ? `${json.slice(0, 280)}...` : json;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (err instanceof Error && err.message && err.message !== '[object Object]') {
+    return err.message;
+  }
+
+  return 'Transaction failed';
+}
+
+/**
+ * Wait for a receipt on the correct chain. If the RPC times out after the
+ * tx is already mined (common on public endpoints), fall back to a one-shot
+ * receipt fetch so the approve → supply sequence is not blocked.
+ */
+async function waitForReceipt(
+  publicClient: PublicClient,
+  hash: Hash,
+): Promise<TransactionReceipt> {
+  try {
+    return await publicClient.waitForTransactionReceipt({
+      hash,
+      confirmations: 1,
+      timeout: 120_000,
+      pollingInterval: 1_500,
+    });
+  } catch (err) {
+    const receipt = await publicClient
+      .getTransactionReceipt({ hash })
+      .catch(() => null);
+    if (receipt) return receipt;
+    throw err;
+  }
+}
+
+async function readWalletChainId(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: any,
+): Promise<number> {
+  const hex = (await provider.request({ method: 'eth_chainId' })) as string;
+  return Number.parseInt(hex, 16);
+}
 
 export function TransactionPrompt({
   method,
@@ -24,11 +145,12 @@ export function TransactionPrompt({
   onError,
   onSuccess,
 }: TransactionPromptProps) {
-  const { address, chain, connector } = useAccount();
+  const { address, connector } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const [status, setStatus] = useState<
     'idle' | 'executing' | 'success' | 'error'
   >('idle');
+  const [progress, setProgress] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,19 +160,37 @@ export function TransactionPrompt({
     if (!address) return;
     setStatus('executing');
     setError(null);
+    setProgress(null);
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const provider = (await connector?.getProvider()) as any;
+      let provider = (await connector?.getProvider()) as any;
       if (!provider)
         throw new Error(
           'No wallet provider found. Please reconnect your wallet.',
         );
 
-      const targetChainId = (params.chainId as number) || mainnet.id;
+      const targetChainId = Number(params.chainId) || mainnet.id;
+      if (!SUPPORTED_CHAINS[targetChainId]) {
+        throw new Error(
+          `Unsupported chainId ${targetChainId}. Supported: ${Object.keys(SUPPORTED_CHAINS).join(', ')}`,
+        );
+      }
 
-      if (chain && chain.id !== targetChainId) {
+      const walletChainId = await readWalletChainId(provider);
+      if (walletChainId !== targetChainId) {
+        setProgress(
+          `Switching wallet to ${SUPPORTED_CHAINS[targetChainId].name}...`,
+        );
         await switchChainAsync({ chainId: targetChainId });
+        // Re-read provider after switch — some connectors refresh the session.
+        provider = (await connector?.getProvider()) as typeof provider;
+        const afterSwitch = await readWalletChainId(provider);
+        if (afterSwitch !== targetChainId) {
+          throw new Error(
+            `Wallet is on chainId ${afterSwitch}, but this supply needs ${targetChainId} (${SUPPORTED_CHAINS[targetChainId].name}). Switch network in your wallet and retry.`,
+          );
+        }
       }
 
       if (method !== 'aave.supplyFbtc') {
@@ -65,14 +205,34 @@ export function TransactionPrompt({
         }[]) || [];
       if (txs.length === 0) throw new Error('No transactions to execute');
 
-      const publicClient = createPublicClient({
-        chain: mainnet,
-        transport: http(),
-      });
+      // Must match the prepared tx chain — waiting on the wrong chain times out
+      // even when the approve already succeeded (e.g. Mantle tx + Ethereum RPC).
+      const publicClient = makePublicClient(targetChainId);
+      const chainIdHex = `0x${targetChainId.toString(16)}`;
 
       let hash: string | undefined;
       for (let i = 0; i < txs.length; i++) {
         const tx = txs[i];
+        setProgress(`Estimating gas: ${tx.label}`);
+
+        let gasHex: string | undefined;
+        try {
+          const gas = await publicClient.estimateGas({
+            account: address as `0x${string}`,
+            to: tx.to as `0x${string}`,
+            data: tx.data as `0x${string}`,
+            value: 0n,
+          });
+          // +20% headroom — Mantle / some wallets under-estimate otherwise
+          gasHex = `0x${((gas * 12n) / 10n).toString(16)}`;
+        } catch (estimateErr) {
+          throw new Error(
+            `Gas estimation failed for "${tx.label}" on ${SUPPORTED_CHAINS[targetChainId].name}: ${formatWalletError(estimateErr)}. ` +
+              `Check you have enough ${targetChainId === mantle.id ? 'MNT' : 'ETH'} for gas and FBTC balance on this network.`,
+          );
+        }
+
+        setProgress(`Confirm in wallet: ${tx.label}`);
         hash = await provider.request({
           method: 'eth_sendTransaction',
           params: [
@@ -80,13 +240,23 @@ export function TransactionPrompt({
               from: address,
               to: tx.to,
               data: tx.data,
+              value: '0x0',
+              chainId: chainIdHex,
+              gas: gasHex,
             },
           ],
         });
+
+        // Approve must be mined before supply.
         if (i < txs.length - 1) {
-          await publicClient.waitForTransactionReceipt({
-            hash: hash as `0x${string}`,
-          });
+          setProgress(`Waiting for confirmation: ${tx.label}`);
+          const receipt = await waitForReceipt(
+            publicClient,
+            hash as `0x${string}`,
+          );
+          if (receipt.status === 'reverted') {
+            throw new Error(`Transaction reverted: ${tx.label} (${hash})`);
+          }
         }
       }
 
@@ -95,6 +265,7 @@ export function TransactionPrompt({
       }
 
       setTxHash(hash);
+      setProgress(null);
       setStatus('success');
       onSuccess?.(
         `Transaction submitted successfully with hash ${hash}. What should I do next?`,
@@ -103,7 +274,7 @@ export function TransactionPrompt({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const errObj = err as any;
       const code = errObj?.code ?? errObj?.cause?.code;
-      const raw = err instanceof Error ? err.message : String(err);
+      const raw = formatWalletError(err);
       const isRejection =
         code === 4001 ||
         code === 'ACTION_REJECTED' ||
@@ -111,6 +282,7 @@ export function TransactionPrompt({
         /request.*reject/i.test(raw);
 
       if (isRejection) {
+        setProgress(null);
         setError(
           'Transaction rejected. Click Execute to try again when ready.',
         );
@@ -118,13 +290,11 @@ export function TransactionPrompt({
         return;
       }
 
-      const firstLine = raw
-        .split('\n')[0]
-        .replace(/https?:\/\/[^\s]+/g, '')
-        .trim();
+      const firstLine = raw.split('\n')[0].trim();
       const clean =
-        firstLine.length > 200 ? firstLine.slice(0, 200) + '...' : firstLine;
+        firstLine.length > 280 ? `${firstLine.slice(0, 280)}...` : firstLine;
       const errorMsg = clean || 'Transaction failed';
+      setProgress(null);
       setError(errorMsg);
       setStatus('error');
       onError?.(errorMsg);
@@ -191,9 +361,11 @@ export function TransactionPrompt({
       )}
 
       {status === 'executing' && (
-        <div className="w-full rounded-[60px] border border-[var(--color-teal)] py-2 text-xs font-medium text-[var(--color-teal)] text-center flex items-center justify-center gap-2">
-          <span className="h-3 w-3 rounded-full border-2 border-[var(--color-teal)] border-t-transparent animate-spin" />
-          Awaiting wallet confirmation...
+        <div className="w-full rounded-[60px] border border-[var(--color-teal)] py-2 px-3 text-xs font-medium text-[var(--color-teal)] text-center flex items-center justify-center gap-2">
+          <span className="h-3 w-3 shrink-0 rounded-full border-2 border-[var(--color-teal)] border-t-transparent animate-spin" />
+          <span className="truncate">
+            {progress || 'Awaiting wallet confirmation...'}
+          </span>
         </div>
       )}
 

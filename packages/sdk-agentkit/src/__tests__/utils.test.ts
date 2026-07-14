@@ -4,7 +4,6 @@ import { resolveRpcUrl } from "../utils";
 
 describe("resolveRpcUrl", () => {
   const original = {
-    RPC_URL: process.env.RPC_URL,
     ETH_RPC_URL: process.env.ETH_RPC_URL,
     MANTLE_RPC_URL: process.env.MANTLE_RPC_URL,
   };
@@ -19,32 +18,36 @@ describe("resolveRpcUrl", () => {
   it("does not reuse Ethereum RPC for Mantle reads", () => {
     delete process.env.MANTLE_RPC_URL;
     expect(
-      resolveRpcUrl(5000, { rpcUrl: "https://eth.example", mantleRpcUrl: undefined }),
+      resolveRpcUrl("mantle-mainnet", {
+        "ethereum-mainnet": "https://eth.example",
+      }),
     ).toBeUndefined();
   });
 
-  it("uses mantleRpcUrl for Mantle", () => {
+  it("uses mantle-mainnet RPC for Mantle", () => {
     expect(
-      resolveRpcUrl(5000, {
-        rpcUrl: "https://eth.example",
-        mantleRpcUrl: "https://mantle.example",
+      resolveRpcUrl("mantle-mainnet", {
+        "ethereum-mainnet": "https://eth.example",
+        "mantle-mainnet": "https://mantle.example",
       }),
     ).toBe("https://mantle.example");
   });
 
-  it("uses rpcUrl for Ethereum", () => {
+  it("uses ethereum-mainnet RPC for Ethereum", () => {
     expect(
-      resolveRpcUrl(1, {
-        rpcUrl: "https://eth.example",
-        mantleRpcUrl: "https://mantle.example",
+      resolveRpcUrl("ethereum-mainnet", {
+        "ethereum-mainnet": "https://eth.example",
+        "mantle-mainnet": "https://mantle.example",
       }),
     ).toBe("https://eth.example");
   });
 
   it("reads MANTLE_RPC_URL from the environment", () => {
     process.env.MANTLE_RPC_URL = "https://mantle.env";
-    expect(resolveRpcUrl(5000, { rpcUrl: "https://eth.example" })).toBe(
-      "https://mantle.env",
-    );
+    expect(
+      resolveRpcUrl("mantle-mainnet", {
+        "ethereum-mainnet": "https://eth.example",
+      }),
+    ).toBe("https://mantle.env");
   });
 });

@@ -11,22 +11,25 @@ import { silenceAgentkitAnalytics } from "./silenceAgentkitAnalytics.js";
 
 silenceAgentkitAnalytics();
 
-const SYSTEM_PROMPT = `You are an AI agent specialized in Function FBTC on Aave V3 (Ethereum Core and Mantle).
+const SYSTEM_PROMPT = `You are an AI agent specialized in Function FBTC on Aave V3 Ethereum and Aave V3 Mantle.
+
+Supported networkId values:
+- ethereum-mainnet → Aave V3 Ethereum (default when the user does not name a network)
+- mantle-mainnet → Aave V3 Mantle (when the user mentions Mantle / MNT)
 
 You can help users:
-- Check Function FBTC balance on Ethereum or Mantle (get_fbtc_balance)
-- Look up the Aave V3 FBTC reserve (get_aave_fbtc_reserve; chainId 1 or 5000)
-- Supply FBTC to Aave V3 on ethereum-mainnet or mantle-mainnet (supply_fbtc_to_aave) — two on-chain txs: approve then supply
+- Check Function FBTC balance (get_fbtc_balance) — pass networkId from the user instruction
+- Look up the Aave V3 Ethereum or Aave V3 Mantle FBTC reserve (get_aave_fbtc_reserve) — pass networkId
+- Supply FBTC to Aave V3 Ethereum or Aave V3 Mantle (supply_fbtc_to_aave) — pass networkId; wallet must already be on that network
 
-FBTC means the ERC-20 at 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum (chainId 1) and Mantle (chainId 5000).
+FBTC token address: 0xc96de26018a54d51c097160568752c4e3bd6c364 on both Ethereum and Mantle.
 Always confirm with the user before executing write transactions.
-When checking balances, show the token symbol and chain.
+When checking balances or reserves, always name the network (Ethereum or Mantle) — never say only "Aave V3".
 Never invent contract addresses, balances, rates, or transaction hashes.
 Tool results are authoritative.`;
 
 async function initializeAgent() {
-  const networkId = process.env.NETWORK_ID || "ethereum-mainnet";
-  const { walletProvider, tools } = await initAgent(networkId);
+  const { walletProvider, tools, networkId, rpcUrls } = await initAgent();
 
   const llm = resolveModel();
   const memory = new MemorySaver();
@@ -39,8 +42,10 @@ async function initializeAgent() {
 
   const address = walletProvider.getAddress();
   console.log(`\nAgent wallet: ${address}`);
-  console.log(`Network: ${networkId}`);
-  console.log(`RPC: ${process.env.RPC_URL ? "custom (RPC_URL)" : "chain default (set RPC_URL for writes)"}`);
+  console.log(`Wallet NETWORK_ID: ${networkId}`);
+  console.log(
+    `RPCs: ethereum-mainnet=${rpcUrls["ethereum-mainnet"] ? "set" : "unset"}, mantle-mainnet=${rpcUrls["mantle-mainnet"] ? "set" : "unset"}`,
+  );
   console.log(
     `Model: ${process.env.MODEL_PROVIDER || "anthropic"} / ${process.env.MODEL_NAME || "(default)"}`,
   );
