@@ -1,8 +1,14 @@
 export {
+  AAVE_FBTC_MANTLE_RESERVE_URL,
+  AAVE_FBTC_MARKETS,
   AAVE_FBTC_RESERVE_URL,
   AAVE_V3_ETHEREUM_POOL,
+  AAVE_V3_MANTLE_POOL,
+  type AaveFbtcMarket,
   FBTC_DECIMALS,
   FBTC_ETHEREUM_ADDRESS,
+  FBTC_MANTLE_ADDRESS,
+  getAaveFbtcMarket,
 } from './aave';
 export {
   buildAssetGlossary,
@@ -15,6 +21,7 @@ export {
 export { type ChainConfig, getChainConfig, makePublicClient, resolveRpcUrl, SUPPORTED_CHAINS } from './chains';
 export { FUNCTION_SYSTEM_PROMPT } from './prompt';
 export {
+  aaveChainId,
   AaveFbtcReserveSchema,
   AaveFbtcReserveZod,
   AaveSupplyFbtcSchema,

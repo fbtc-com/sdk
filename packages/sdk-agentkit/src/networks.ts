@@ -1,13 +1,14 @@
 import type { Network } from "@coinbase/agentkit";
 import type { Chain } from "viem";
-import { mainnet } from "viem/chains";
+import { mainnet, mantle } from "viem/chains";
 
 /**
  * Maps AgentKit network IDs to viem Chain objects.
- * FBTC / Aave V3 supply currently targets Ethereum mainnet only.
+ * FBTC / Aave V3 supply targets Ethereum mainnet and Mantle.
  */
 export const NETWORK_ID_TO_VIEM_CHAIN: Record<string, Chain> = {
   "ethereum-mainnet": mainnet,
+  "mantle-mainnet": mantle,
 };
 
 export interface ResolvedNetwork {
@@ -45,6 +46,8 @@ export function resolveChainName(chainName: string): ResolvedNetwork | null {
     ethereum: "ethereum-mainnet",
     eth: "ethereum-mainnet",
     mainnet: "ethereum-mainnet",
+    mantle: "mantle-mainnet",
+    mnt: "mantle-mainnet",
   };
 
   const resolved = aliases[normalized];
@@ -60,4 +63,10 @@ export function resolveChainName(chainName: string): ResolvedNetwork | null {
 
 export function isFbtcSupportedNetwork(network: Network): boolean {
   return resolveNetwork(network) !== null;
+}
+
+export function getViemChainByChainId(chainId: number): Chain | null {
+  return (
+    Object.values(NETWORK_ID_TO_VIEM_CHAIN).find((c) => c.id === chainId) ?? null
+  );
 }

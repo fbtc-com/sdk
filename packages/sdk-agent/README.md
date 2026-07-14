@@ -14,8 +14,8 @@ npm install @functionFBTC/sdk-agent
 | --- | --- |
 | `get_token_info` | Look up FBTC metadata |
 | `get_token_balance` | Read any ERC-20 balance |
-| `get_aave_fbtc_reserve` | Aave V3 Ethereum FBTC reserve details |
-| `prepare_aave_supply_fbtc` | Prepare approve + Pool.supply calldata |
+| `get_aave_fbtc_reserve` | Aave V3 FBTC reserve details (Ethereum / Mantle) |
+| `prepare_aave_supply_fbtc` | Prepare approve + Pool.supply calldata (chainId 1 or 5000) |
 
 ## Usage
 
@@ -43,5 +43,6 @@ const reserve = await getAaveFbtcReserve.execute({});
 const prepared = await prepareAaveSupplyFbtc.execute({
   amount: '0.1',
   address: '0x...',
+  chainId: 1, // or 5000 for Mantle
 });
 ```

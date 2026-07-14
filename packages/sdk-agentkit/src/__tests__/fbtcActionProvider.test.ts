@@ -20,6 +20,12 @@ describe("FbtcActionProvider", () => {
       );
     });
 
+    it("supports mantle-mainnet", () => {
+      expect(provider.supportsNetwork(makeNetwork("mantle-mainnet"))).toBe(
+        true,
+      );
+    });
+
     it("does not support ethereum-sepolia", () => {
       expect(provider.supportsNetwork(makeNetwork("ethereum-sepolia"))).toBe(
         false,
@@ -59,6 +65,7 @@ describe("FbtcActionProvider", () => {
       const parsed = JSON.parse(result);
       expect(parsed.success).toBe(false);
       expect(parsed.error).toContain("ethereum-mainnet");
+      expect(parsed.error).toContain("mantle-mainnet");
     });
   });
 });

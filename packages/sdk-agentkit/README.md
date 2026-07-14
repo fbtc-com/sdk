@@ -12,9 +12,9 @@ npm install @functionFBTC/sdk-agentkit @coinbase/agentkit
 
 | Action | Description |
 | --- | --- |
-| `get_fbtc_balance` | FBTC ERC-20 balance on Ethereum mainnet |
-| `get_aave_fbtc_reserve` | Aave V3 Ethereum FBTC reserve details |
-| `supply_fbtc_to_aave` | Approve + supply FBTC to Aave V3 (requires `ethereum-mainnet`) |
+| `get_fbtc_balance` | FBTC ERC-20 balance on Ethereum or Mantle |
+| `get_aave_fbtc_reserve` | Aave V3 FBTC reserve details (Ethereum / Mantle) |
+| `supply_fbtc_to_aave` | Approve + supply FBTC to Aave V3 (requires `ethereum-mainnet` or `mantle-mainnet`) |
 
 ## Usage
 

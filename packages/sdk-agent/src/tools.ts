@@ -130,7 +130,7 @@ export const getTokenBalance: ToolDefinition<
     'Check the balance of any ERC-20 token for a wallet address. ' +
     'Requires the token contract address (0x...). ' +
     'Reads symbol and decimals directly from the contract. ' +
-    'Use FBTC address 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum mainnet (chainId 1).',
+    'Use FBTC address 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum (chainId 1) or Mantle (chainId 5000).',
   parameters: TokenBalanceSchema as Record<string, unknown>,
   schema: TokenBalanceZod,
   execute: async (params) => {

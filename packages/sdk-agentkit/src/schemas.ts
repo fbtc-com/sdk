@@ -6,11 +6,25 @@ export const GetFbtcBalanceSchema = z.object({
     .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
     .optional()
     .describe(
-      "EVM address to check FBTC balance for on Ethereum mainnet. If omitted, uses the connected wallet address.",
+      "EVM address to check FBTC balance for. If omitted, uses the connected wallet address.",
+    ),
+  chainId: z
+    .number()
+    .optional()
+    .describe(
+      "Chain ID to read FBTC on. Supported: 1=Ethereum, 5000=Mantle. Defaults to the wallet network when supported, otherwise Ethereum (1).",
     ),
 });
 
-export const GetAaveFbtcReserveSchema = z.object({});
+export const GetAaveFbtcReserveSchema = z.object({
+  chainId: z
+    .number()
+    .optional()
+    .default(1)
+    .describe(
+      "Aave market chain ID. Supported: 1=Ethereum Core, 5000=Mantle. Defaults to 1 (Ethereum).",
+    ),
+});
 
 export const SupplyFbtcToAaveSchema = z.object({
   amount: z

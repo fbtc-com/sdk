@@ -9,6 +9,7 @@
 
 const EXPLORERS: Record<number, string> = {
   1: "https://etherscan.io",
+  5000: "https://mantlescan.xyz",
   11155111: "https://sepolia.etherscan.io",
   8453: "https://basescan.org",
   84532: "https://sepolia.basescan.org",

@@ -4,11 +4,10 @@ import {
   walletActionProvider,
 } from "@coinbase/agentkit";
 import { getLangChainTools } from "@coinbase/agentkit-langchain";
+import { fbtcActionProvider } from "@functionFBTC/sdk-agentkit";
 import type { Chain } from "viem";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-
-import { fbtcActionProvider } from "@functionFBTC/sdk-agentkit";
 
 import { CHAINS } from "./config.js";
 
@@ -36,6 +35,12 @@ export async function initAgent(networkId: string) {
   }
 
   const rpcUrl = process.env.RPC_URL;
+  const ethRpcUrl =
+    process.env.ETH_RPC_URL ||
+    (networkId === "ethereum-mainnet" ? rpcUrl : undefined);
+  const mantleRpcUrl =
+    process.env.MANTLE_RPC_URL ||
+    (networkId === "mantle-mainnet" ? rpcUrl : undefined);
   const chain = chainWithRpc(baseChain, rpcUrl);
   const account = privateKeyToAccount(process.env.WALLET_PRIVATE_KEY as `0x${string}`);
   const walletClient = createWalletClient({
@@ -52,7 +57,10 @@ export async function initAgent(networkId: string) {
     walletProvider,
     actionProviders: [
       walletActionProvider(),
-      fbtcActionProvider({ rpcUrl }),
+      fbtcActionProvider({
+        rpcUrl: ethRpcUrl,
+        mantleRpcUrl,
+      }),
     ],
   });
 

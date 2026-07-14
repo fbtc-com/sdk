@@ -20,9 +20,17 @@ export const amount = z
   );
 
 export const CHAIN_ID_DESCRIPTION =
-  "Chain ID. Default to the user's connected chain (provided in your wallet context) unless they specify a different one. Supported: 1=Ethereum.";
+  "Chain ID. Default to the user's connected chain (provided in your wallet context) unless they specify a different one. Supported: 1=Ethereum, 5000=Mantle.";
 
 export const chainId = z.number().describe(CHAIN_ID_DESCRIPTION);
+
+export const aaveChainId = z
+  .number()
+  .optional()
+  .default(1)
+  .describe(
+    'Aave market chain ID. Supported: 1=Ethereum Core, 5000=Mantle. Defaults to 1 (Ethereum).',
+  );
 
 // ─── Zod Schemas ─────────────────────────────────────────────────────
 
@@ -46,13 +54,16 @@ export const TokenInfoZod = z
     'Provide query, or address + chainId',
   );
 
-export const AaveFbtcReserveZod = z.object({});
+export const AaveFbtcReserveZod = z.object({
+  chainId: aaveChainId,
+});
 
 export const AaveSupplyFbtcZod = z.object({
   amount: amount.describe("Amount of FBTC to supply to Aave V3 (e.g. '0.1')"),
   address: evmAddress.describe(
     'EVM wallet address supplying and receiving the Aave aToken position',
   ),
+  chainId: aaveChainId,
 });
 
 // ─── Derived JSON Schemas ────────────────────────────────────────────

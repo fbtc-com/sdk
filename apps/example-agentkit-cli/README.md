@@ -19,4 +19,4 @@ yarn workspace @functionFBTC/example-agentkit-cli start
 yarn workspace @functionFBTC/example-agentkit-cli start:auto
 ```
 
-`NETWORK_ID` must be `ethereum-mainnet` for `supply_fbtc_to_aave`.
+`NETWORK_ID` must be `ethereum-mainnet` or `mantle-mainnet` for `supply_fbtc_to_aave`.

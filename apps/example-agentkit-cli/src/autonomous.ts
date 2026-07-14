@@ -50,7 +50,7 @@ async function main() {
       "You are a Function FBTC agent. " +
       "Execute the requested operations and report results clearly. " +
       "For read-only operations, proceed without confirmation. " +
-      "FBTC is the ERC-20 at 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum mainnet.",
+      "FBTC is the ERC-20 at 0xc96de26018a54d51c097160568752c4e3bd6c364 on Ethereum (chainId 1) and Mantle (chainId 5000).",
   });
 
   const address = walletProvider.getAddress();
