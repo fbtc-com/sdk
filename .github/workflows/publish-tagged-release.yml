@@ -1,0 +1,101 @@
+name: Publish SDK tagged release
+run-name: Publish ${{github.event.inputs.package}} from ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        type: choice
+        description: Target
+        required: true
+        options:
+          - sdk-agent
+          - sdk-agentkit
+      tag: 
+        type: string
+        description: 'npm tag to publish under (e.g. v3.1.0-canary, rc.5, etc)'
+        required: true
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: production
+    container:
+      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-publish
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref || github.sha }}
+
+      - name: Allow Git to access repo
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Debug Git status
+        run: |
+          echo "PWD: $(pwd)"
+          ls -la
+          git status
+
+      - name: Set Git identity
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          echo "✅ Git identity configured successfully."
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Resolve workspace dependencies for publishing
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const packagesDir = './packages';
+          const versions = {};
+          for (const dir of fs.readdirSync(packagesDir)) {
+            const p = path.join(packagesDir, dir, 'package.json');
+            if (!fs.existsSync(p)) continue;
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (pkg.name?.startsWith('@functionFBTC/')) versions[pkg.name] = pkg.version;
+          }
+          const target = path.join(packagesDir, '${{ github.event.inputs.package }}', 'package.json');
+          const pkg = JSON.parse(fs.readFileSync(target, 'utf8'));
+          let modified = false;
+          for (const depType of ['dependencies', 'peerDependencies']) {
+            if (!pkg[depType]) continue;
+            for (const [name, range] of Object.entries(pkg[depType])) {
+              if (!range.startsWith('workspace:')) continue;
+              pkg[depType][name] = depType === 'peerDependencies' ? '*' : (versions[name] || '*');
+              modified = true;
+            }
+          }
+          if (modified) {
+            fs.writeFileSync(target, JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Resolved workspace deps in ' + target);
+          }
+          "
+
+      - name: Build packages
+        run: yarn turbo run build --filter=...@functionFBTC/${{ github.event.inputs.package }}
+
+      - name: Configure registry
+        working-directory: ./packages/${{ github.event.inputs.package }}/
+        run: |
+          npm config set access public -ws=false -iwr
+          npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPMJS_TOKEN }} -ws=false -iwr
+
+      - name: Publish
+        working-directory: ./packages/${{ github.event.inputs.package }}/
+        run: npm publish --tag ${{ github.event.inputs.tag }} --registry https://registry.npmjs.org
+

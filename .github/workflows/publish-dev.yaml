@@ -1,0 +1,138 @@
+# .github/workflows/publish-dev.yml
+name: Publish Dev (GitHub Packages)
+run-name: Dev publish ${{ github.ref_name }}
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+      - 'fix/**'
+      - 'dev/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-ci
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref || github.sha }}
+
+      - name: Allow Git to access repo
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: License policy check
+        run: yarn licenses:check
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Build
+        run: yarn build
+
+      - name: Test
+        run: yarn test:required
+
+  publish-dev:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      PUBLISH_ORDER: "sdk-agent sdk-agentkit"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Allow Git to access repo
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: yarn
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@functionFBTC'
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build all packages
+        run: yarn turbo run build
+
+      - name: Compute prerelease version
+        id: version
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          SHA="${{ github.sha }}"
+          SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+          SHORT_SHA="${SHA:0:7}"
+          VERSION="0.0.0-${SLUG}.${SHORT_SHA}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Computed version: $VERSION"
+
+      - name: Publish all packages to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          FAILED=""
+
+          for pkg in $PUBLISH_ORDER; do
+            PKG_DIR="./packages/$pkg"
+            PKG_JSON="$PKG_DIR/package.json"
+            [ -f "$PKG_JSON" ] || continue
+
+            echo "Publishing @functionFBTC/${pkg}@${VERSION}..."
+
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('$PKG_JSON', 'utf8'));
+              pkg.version = '$VERSION';
+              for (const depType of ['dependencies', 'peerDependencies']) {
+                if (!pkg[depType]) continue;
+                for (const [name, range] of Object.entries(pkg[depType])) {
+                  if (!range.startsWith('workspace:')) continue;
+                  pkg[depType][name] = depType === 'peerDependencies' ? '*' : '$VERSION';
+                }
+              }
+              pkg.publishConfig = { registry: 'https://npm.pkg.github.com', access: 'restricted' };
+              pkg.repository = { type: 'git', url: 'https://github.com/fbtc-com/sdk.git', directory: 'packages/$pkg' };
+              fs.writeFileSync('$PKG_JSON', JSON.stringify(pkg, null, 2) + '\n');
+            "
+
+            cd "$PKG_DIR"
+            if npm publish --tag dev; then
+              echo "  Published"
+            else
+              echo "  FAILED"
+              FAILED="${FAILED} ${pkg}"
+            fi
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          if [ -n "$FAILED" ]; then
+            echo "The following packages failed to publish:${FAILED}"
+            exit 1
+          fi

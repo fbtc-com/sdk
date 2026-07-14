@@ -1,0 +1,85 @@
+{
+  "name": "@functionFBTC/sdk-agent",
+  "version": "0.1.0",
+  "description": "Framework-agnostic AI agent tools for Function FBTC and Aave V3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fbtc-com/sdk.git",
+    "directory": "packages/sdk-agent"
+  },
+  "bugs": {
+    "url": "https://github.com/fbtc-com/sdk/issues"
+  },
+  "homepage": "https://github.com/fbtc-com/sdk#readme",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./vercel": {
+      "types": "./dist/vercel.d.ts",
+      "import": "./dist/vercel.js",
+      "require": "./dist/vercel.cjs"
+    },
+    "./langchain": {
+      "types": "./dist/langchain.d.ts",
+      "import": "./dist/langchain.js",
+      "require": "./dist/langchain.cjs"
+    }
+  },
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">= 18.0.0"
+  },
+  "scripts": {
+    "types": "tsc --noEmit",
+    "build": "yarn types && vite build && tsc -p tsconfig.build.json",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "keywords": [
+    "function",
+    "fbtc",
+    "sdk",
+    "ai",
+    "agent",
+    "tools",
+    "aave"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@langchain/core": "^0.3.0",
+    "ai": "^4.0.0",
+    "viem": "^2.21.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "ai": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "zod": "^3.25.28",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "devDependencies": {
+    "@langchain/core": "^0.3.0",
+    "ai": "^4.0.0",
+    "typescript": "^5.4.5",
+    "viem": "^2.21.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

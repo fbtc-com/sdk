@@ -1,0 +1,193 @@
+name: Publish All Canary
+run-name: "Canary publish (@${{ inputs.suffix }}) from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      suffix:
+        type: string
+        description: "Dist-tag / version suffix (e.g. canary, alpha, beta, rc)"
+        default: "canary"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    environment: production
+    container:
+      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-canary
+      cancel-in-progress: true
+
+    env:
+      # Publish order: sdk-agent then sdk-agentkit (independent; agentkit has no workspace deps)
+      PUBLISH_ORDER: "sdk-agent sdk-agentkit"
+
+    steps:
+      # ── Checkout & tooling ──────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Allow Git to access repo
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # ── Version bumps (ephemeral – no git commit) ──────────────────
+      - name: Set canary versions
+        id: versions
+        env:
+          SUFFIX: ${{ inputs.suffix }}
+          RUN_NUM: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          echo "📦 Setting canary versions (suffix=${SUFFIX}, run=${RUN_NUM})…"
+          echo ""
+
+          # Use node directly instead of `npm version` because npm chokes on
+          # the Yarn workspace:* protocol when validating package.json.
+          for pkg in $PUBLISH_ORDER; do
+            PKG_DIR="./packages/$pkg"
+            CURRENT=$(node -p "require('$PKG_DIR/package.json').version")
+            CANARY="${CURRENT}-${SUFFIX}.${RUN_NUM}"
+
+            node -e "
+              const fs = require('fs');
+              const p = '$PKG_DIR/package.json';
+              const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+              pkg.version = '$CANARY';
+              fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+            "
+
+            echo "  ${pkg}: ${CURRENT} → ${CANARY}"
+          done
+
+          echo ""
+          echo "✅ All versions updated."
+
+      # ── Resolve workspace:* → real versions ────────────────────────
+      - name: Resolve workspace dependencies
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const packagesDir = './packages';
+
+          // 1. Collect every @functionFBTC package version
+          const versions = {};
+          for (const dir of fs.readdirSync(packagesDir)) {
+            const p = path.join(packagesDir, dir, 'package.json');
+            if (!fs.existsSync(p)) continue;
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+            if (pkg.name?.startsWith('@functionFBTC/')) {
+              versions[pkg.name] = pkg.version;
+            }
+          }
+          console.log('Package versions:', JSON.stringify(versions, null, 2));
+          console.log('');
+
+          // 2. Replace workspace:* in every package
+          for (const dir of fs.readdirSync(packagesDir)) {
+            const p = path.join(packagesDir, dir, 'package.json');
+            if (!fs.existsSync(p)) continue;
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+            let modified = false;
+
+            for (const depType of ['dependencies', 'peerDependencies']) {
+              if (!pkg[depType]) continue;
+              for (const [name, range] of Object.entries(pkg[depType])) {
+                if (!range.startsWith('workspace:')) continue;
+                // dependencies  → exact canary version (ensures canary deps install together)
+                // peerDeps      → permissive '*' (consumer provides the version)
+                const resolved = depType === 'peerDependencies'
+                  ? '*'
+                  : (versions[name] || '*');
+                pkg[depType][name] = resolved;
+                console.log('  ' + dir + ': ' + name + ' (' + depType + ') → ' + resolved);
+                modified = true;
+              }
+            }
+
+            if (modified) {
+              fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+            }
+          }
+          console.log('');
+          console.log('✅ Workspace dependencies resolved.');
+          "
+
+      # ── Build & Publish ────────────────────────────────────────────
+      - name: Build all packages
+        run: yarn turbo run build
+
+      - name: Configure npm registry
+        run: |
+          npm config set access public -ws=false -iwr
+          npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPMJS_TOKEN }} -ws=false -iwr
+
+      - name: Publish all packages
+        env:
+          TAG: ${{ inputs.suffix }}
+        run: |
+          set -euo pipefail
+          echo "🚀 Publishing all packages with --tag ${TAG}…"
+          echo ""
+
+          FAILED=""
+          for pkg in $PUBLISH_ORDER; do
+            PKG_DIR="./packages/$pkg"
+            VERSION=$(node -p "require('$PKG_DIR/package.json').version")
+
+            echo "📦 Publishing @functionFBTC/${pkg}@${VERSION}…"
+            cd "$PKG_DIR"
+            if npm publish --tag "$TAG"; then
+              echo "  ✅ Published"
+            else
+              echo "  ❌ FAILED"
+              FAILED="${FAILED} ${pkg}"
+            fi
+            cd "$GITHUB_WORKSPACE"
+            echo ""
+          done
+
+          if [ -n "$FAILED" ]; then
+            echo "❌ The following packages failed to publish:${FAILED}"
+            exit 1
+          fi
+
+          echo "🎉 All packages published successfully!"
+
+      # ── Summary ────────────────────────────────────────────────────
+      - name: Print install instructions
+        if: always()
+        env:
+          TAG: ${{ inputs.suffix }}
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║                  📋 Canary Publish Summary                  ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+
+          for pkg in $PUBLISH_ORDER; do
+            VERSION=$(node -p "require('./packages/$pkg/package.json').version")
+            printf "║  %-58s ║\n" "@functionFBTC/${pkg}@${VERSION}"
+          done
+
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          printf "║  %-58s ║\n" "Tag:     ${TAG}"
+          printf "║  %-58s ║\n" "Branch:  ${{ github.ref_name }}"
+          printf "║  %-58s ║\n" "Install: npm i @functionFBTC/sdk-agent@${TAG}"
+          echo "╚══════════════════════════════════════════════════════════════╝"

@@ -1,0 +1,7 @@
+# Default owner for the entire repository.
+# Branch protection must enable "Require review from Code Owners"
+# for this to block merges without @leo-fbtc approval.
+* @leo-fbtc
+
+# Workflow changes are especially sensitive (secrets, publish, release).
+/.github/ @leo-fbtc

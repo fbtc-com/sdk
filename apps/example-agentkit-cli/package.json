@@ -1,0 +1,29 @@
+{
+  "name": "@functionFBTC/example-agentkit-cli",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Example CLI agent using Function FBTC AgentKit provider with LangChain",
+  "scripts": {
+    "start": "npx tsx src/chatbot.ts",
+    "start:auto": "npx tsx src/autonomous.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@coinbase/agentkit": "^0.2.0",
+    "@coinbase/agentkit-langchain": "^0.2.0",
+    "@functionFBTC/sdk-agentkit": "workspace:*",
+    "@langchain/anthropic": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
+    "@langchain/openai": "^0.3.0",
+    "dotenv": "^16.4.0",
+    "viem": "^2.23.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.8.3"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "name": "@functionFBTC/sdk-agentkit",
+  "version": "0.1.0",
+  "description": "Function FBTC Action Provider for Coinbase AgentKit — balance, Aave V3 supply",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fbtc-com/sdk.git",
+    "directory": "packages/sdk-agentkit"
+  },
+  "bugs": {
+    "url": "https://github.com/fbtc-com/sdk/issues"
+  },
+  "homepage": "https://github.com/fbtc-com/sdk#readme",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">= 18.0.0"
+  },
+  "scripts": {
+    "types": "tsc --noEmit",
+    "build": "yarn types && vite build && tsc -p tsconfig.build.json",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx}\"",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:unit": "vitest run"
+  },
+  "keywords": [
+    "function",
+    "fbtc",
+    "sdk",
+    "agentkit",
+    "coinbase",
+    "aave",
+    "ai",
+    "agent"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@coinbase/agentkit": ">=0.2.0",
+    "viem": "^2.21.0",
+    "zod": "^3.22.0"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@coinbase/agentkit": "^0.2.0",
+    "@swc/core": "^1.15.18",
+    "typescript": "^5.4.5",
+    "unplugin-swc": "^1.5.9",
+    "viem": "^2.21.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4",
+    "zod": "^3.22.0"
+  }
+}
