@@ -75,7 +75,7 @@ jobs:
             const p = path.join(packagesDir, dir, 'package.json');
             if (!fs.existsSync(p)) continue;
             const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
-            if (pkg.name?.startsWith('@functionFBTC/')) versions[pkg.name] = pkg.version;
+            if (pkg.name?.startsWith('@functionfbtc/')) versions[pkg.name] = pkg.version;
           }
           const target = path.join(packagesDir, '${{ github.event.inputs.package }}', 'package.json');
           const pkg = JSON.parse(fs.readFileSync(target, 'utf8'));
@@ -95,7 +95,7 @@ jobs:
           "
 
       - name: Build packages
-        run: yarn turbo run build --filter=...@functionFBTC/${{ github.event.inputs.package }}
+        run: yarn turbo run build --filter=...@functionfbtc/${{ github.event.inputs.package }}
 
       - name: Configure registry
         working-directory: ./packages/${{ github.event.inputs.package }}/

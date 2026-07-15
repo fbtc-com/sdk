@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && npx turbo build --filter=@functionFBTC/sdk-agent && cd apps/example-agent-chat && npx vite build",
+  "buildCommand": "cd ../.. && npx turbo build --filter=@functionfbtc/sdk-agent && cd apps/example-agent-chat && npx vite build",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [

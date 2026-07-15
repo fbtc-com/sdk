@@ -3,7 +3,7 @@
  *
  * Usage:
  * ```ts
- * import { functionLangChainTools } from "@functionFBTC/sdk-agent/langchain";
+ * import { functionLangChainTools } from "@functionfbtc/sdk-agent/langchain";
  * import { AgentExecutor } from "langchain/agents";
  *
  * const agent = AgentExecutor.fromAgentAndTools({ agent, tools: functionLangChainTools });

@@ -1,11 +1,11 @@
-# @functionFBTC/sdk-agent
+# @functionfbtc/sdk-agent
 
 Framework-agnostic AI agent tools for Function FBTC and Aave V3.
 
 ## Install
 
 ```bash
-npm install @functionFBTC/sdk-agent
+npm install @functionfbtc/sdk-agent
 ```
 
 ## Tools
@@ -22,7 +22,7 @@ npm install @functionFBTC/sdk-agent
 ### Vercel AI SDK
 
 ```ts
-import { functionTools } from '@functionFBTC/sdk-agent/vercel';
+import { functionTools } from '@functionfbtc/sdk-agent/vercel';
 import { streamText } from 'ai';
 
 const result = streamText({ model, tools: functionTools, messages });
@@ -31,13 +31,13 @@ const result = streamText({ model, tools: functionTools, messages });
 ### LangChain
 
 ```ts
-import { functionLangChainTools } from '@functionFBTC/sdk-agent/langchain';
+import { functionLangChainTools } from '@functionfbtc/sdk-agent/langchain';
 ```
 
 ### Direct
 
 ```ts
-import { getAaveFbtcReserve, prepareAaveSupplyFbtc } from '@functionFBTC/sdk-agent';
+import { getAaveFbtcReserve, prepareAaveSupplyFbtc } from '@functionfbtc/sdk-agent';
 
 const reserve = await getAaveFbtcReserve.execute({});
 const prepared = await prepareAaveSupplyFbtc.execute({

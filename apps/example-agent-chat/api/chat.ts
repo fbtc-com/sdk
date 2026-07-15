@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { functionTools as allFunctionTools } from '@functionFBTC/sdk-agent/vercel';
+import { functionTools as allFunctionTools } from '@functionfbtc/sdk-agent/vercel';
 import { streamText } from 'ai';
 
 // Vercel serverless function for /api/chat

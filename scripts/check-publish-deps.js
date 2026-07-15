@@ -2,7 +2,7 @@
 /**
  * Pre-publish Dependency Check Script
  *
- * Validates that all @functionFBTC internal dependencies are published
+ * Validates that all @functionfbtc internal dependencies are published
  * to npm before allowing a package to be published.
  *
  * This prevents publishing a package that depends on an unpublished
@@ -16,7 +16,7 @@ import { execFileSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join, resolve } from 'path';
 
-const PACKAGE_SCOPE = '@functionFBTC/';
+const PACKAGE_SCOPE = '@functionfbtc/';
 
 /**
  * Allowed package names (whitelist for security)
@@ -160,7 +160,7 @@ async function main() {
   );
 
   if (scopedDeps.length === 0) {
-    console.log('✅ No internal @functionFBTC dependencies found.\n');
+    console.log('✅ No internal @functionfbtc dependencies found.\n');
     process.exit(0);
   }
 

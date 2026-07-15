@@ -24,8 +24,8 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.SDK_RELEASE_BOT_TOKEN }}
       PACKAGE_JSON_PATH: ./packages/sdk-agent/package.json
-      PACKAGE_NAME: "@functionFBTC/sdk-agent"
-      PACKAGE_SAFE_NAME: "functionFBTC-sdk-agent"
+      PACKAGE_NAME: "@functionfbtc/sdk-agent"
+      PACKAGE_SAFE_NAME: "functionfbtc-sdk-agent"
     steps:
       - name: Require label adder to be in allowlist
         if: github.event.action == 'labeled'
@@ -175,7 +175,7 @@ jobs:
           REL_BRANCH: ${{ steps.naming.outputs.rel_branch }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PACKAGE_NAME: "@functionFBTC/sdk-agent"
+          PACKAGE_NAME: "@functionfbtc/sdk-agent"
           PKG_VER: ${{ steps.ver.outputs.version }}
         run: |
           set -euo pipefail

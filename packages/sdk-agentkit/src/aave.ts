@@ -4,7 +4,7 @@
  * Read helpers select a market by networkId independently of the wallet.
  * Write actions require the wallet to be on the same networkId.
  *
- * NOTE: Market constants are mirrored in @functionFBTC/sdk-agent `src/aave.ts`.
+ * NOTE: Market constants are mirrored in @functionfbtc/sdk-agent `src/aave.ts`.
  * Keep addresses / decimals / reserve URLs in sync when either side changes.
  */
 import type { Address, Hex } from "viem";

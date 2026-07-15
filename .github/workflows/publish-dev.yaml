@@ -68,7 +68,7 @@ jobs:
           node-version-file: '.nvmrc'
           cache: yarn
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@functionFBTC'
+          scope: '@functionfbtc'
 
       - name: Install dependencies
         run: yarn install --immutable
@@ -100,7 +100,7 @@ jobs:
             PKG_JSON="$PKG_DIR/package.json"
             [ -f "$PKG_JSON" ] || continue
 
-            echo "Publishing @functionFBTC/${pkg}@${VERSION}..."
+            echo "Publishing @functionfbtc/${pkg}@${VERSION}..."
 
             node -e "
               const fs = require('fs');

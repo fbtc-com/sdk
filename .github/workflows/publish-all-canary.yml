@@ -84,13 +84,13 @@ jobs:
           const path = require('path');
           const packagesDir = './packages';
 
-          // 1. Collect every @functionFBTC package version
+          // 1. Collect every @functionfbtc package version
           const versions = {};
           for (const dir of fs.readdirSync(packagesDir)) {
             const p = path.join(packagesDir, dir, 'package.json');
             if (!fs.existsSync(p)) continue;
             const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
-            if (pkg.name?.startsWith('@functionFBTC/')) {
+            if (pkg.name?.startsWith('@functionfbtc/')) {
               versions[pkg.name] = pkg.version;
             }
           }
@@ -149,7 +149,7 @@ jobs:
             PKG_DIR="./packages/$pkg"
             VERSION=$(node -p "require('$PKG_DIR/package.json').version")
 
-            echo "📦 Publishing @functionFBTC/${pkg}@${VERSION}…"
+            echo "📦 Publishing @functionfbtc/${pkg}@${VERSION}…"
             cd "$PKG_DIR"
             if npm publish --tag "$TAG"; then
               echo "  ✅ Published"
@@ -181,11 +181,11 @@ jobs:
 
           for pkg in $PUBLISH_ORDER; do
             VERSION=$(node -p "require('./packages/$pkg/package.json').version")
-            printf "║  %-58s ║\n" "@functionFBTC/${pkg}@${VERSION}"
+            printf "║  %-58s ║\n" "@functionfbtc/${pkg}@${VERSION}"
           done
 
           echo "╠══════════════════════════════════════════════════════════════╣"
           printf "║  %-58s ║\n" "Tag:     ${TAG}"
           printf "║  %-58s ║\n" "Branch:  ${{ github.ref_name }}"
-          printf "║  %-58s ║\n" "Install: npm i @functionFBTC/sdk-agent@${TAG}"
+          printf "║  %-58s ║\n" "Install: npm i @functionfbtc/sdk-agent@${TAG}"
           echo "╚══════════════════════════════════════════════════════════════╝"

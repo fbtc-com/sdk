@@ -1,6 +1,6 @@
 # Function FBTC AgentKit CLI
 
-Interactive and autonomous CLI agents using `@functionFBTC/sdk-agentkit` with LangChain.
+Interactive and autonomous CLI agents using `@functionfbtc/sdk-agentkit` with LangChain.
 
 Supports **Aave V3 Ethereum** (`ethereum-mainnet`) and **Aave V3 Mantle**
 (`mantle-mainnet`). Always name the network in prompts — do not say only “Aave V3”.
@@ -22,8 +22,8 @@ network, the default is `ethereum-mainnet` (Aave V3 Ethereum).
 
 ```bash
 # Interactive chatbot
-yarn workspace @functionFBTC/example-agentkit-cli start
+yarn workspace @functionfbtc/example-agentkit-cli start
 
 # Autonomous read-only validation
-yarn workspace @functionFBTC/example-agentkit-cli start:auto
+yarn workspace @functionfbtc/example-agentkit-cli start:auto
 ```

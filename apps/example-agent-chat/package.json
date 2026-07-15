@@ -1,5 +1,5 @@
 {
-  "name": "@functionFBTC/example-agent-chat",
+  "name": "@functionfbtc/example-agent-chat",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -14,7 +14,7 @@
     "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/openai": "^1.0.0",
     "@ai-sdk/react": "^1.0.0",
-    "@functionFBTC/sdk-agent": "workspace:*",
+    "@functionfbtc/sdk-agent": "workspace:*",
     "@tanstack/react-query": "^5.50.0",
     "ai": "^4.0.0",
     "buffer": "^6.0.3",

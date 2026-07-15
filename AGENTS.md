@@ -6,8 +6,8 @@ Monorepo with Yarn 4 workspaces + Turborepo for Function FBTC AI agent integrati
 
 ```
 packages/
-  sdk-agent/        # Framework-agnostic tools (@functionFBTC/sdk-agent)
-  sdk-agentkit/     # Coinbase AgentKit provider (@functionFBTC/sdk-agentkit)
+  sdk-agent/        # Framework-agnostic tools (@functionfbtc/sdk-agent)
+  sdk-agentkit/     # Coinbase AgentKit provider (@functionfbtc/sdk-agentkit)
 apps/
   example-agent-chat/     # Web chat UI example
   example-agentkit-cli/   # CLI AgentKit example
@@ -30,10 +30,10 @@ yarn format                   # Prettier format all
 ### Per-package
 
 ```bash
-npx turbo build --filter=@functionFBTC/sdk-agent
-npx turbo build --filter=@functionFBTC/sdk-agentkit
-yarn workspace @functionFBTC/sdk-agent test
-yarn workspace @functionFBTC/sdk-agentkit test
+npx turbo build --filter=@functionfbtc/sdk-agent
+npx turbo build --filter=@functionfbtc/sdk-agentkit
+yarn workspace @functionfbtc/sdk-agent test
+yarn workspace @functionfbtc/sdk-agentkit test
 ```
 
 ## Code Standards

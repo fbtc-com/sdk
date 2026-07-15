@@ -23,7 +23,7 @@ Supported markets:
 From the SDK repository root:
 
 ```bash
-yarn workspace @functionFBTC/example-agent-chat dev
+yarn workspace @functionfbtc/example-agent-chat dev
 ```
 
 Configure the model provider and wallet connection values using the existing

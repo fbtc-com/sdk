@@ -10,7 +10,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
-    "test:required": "yarn workspace @functionFBTC/sdk-agent test && yarn workspace @functionFBTC/sdk-agentkit test && yarn workspace @functionFBTC/example-agent-chat test",
+    "test:required": "yarn workspace @functionfbtc/sdk-agent test && yarn workspace @functionfbtc/sdk-agentkit test && yarn workspace @functionfbtc/example-agent-chat test",
     "test:unit": "turbo run test:unit",
     "lint": "turbo run lint",
     "licenses:check": "node scripts/check-licenses.mjs",

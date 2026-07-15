@@ -1,5 +1,5 @@
 {
-  "name": "@functionFBTC/sdk-agent",
+  "name": "@functionfbtc/sdk-agent",
   "version": "0.1.0",
   "description": "Framework-agnostic AI agent tools for Function FBTC and Aave V3",
   "repository": {

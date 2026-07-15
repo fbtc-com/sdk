@@ -6,8 +6,8 @@ TypeScript SDK and examples for integrating Function FBTC with AI agents — inc
 
 | Package | Description |
 | --- | --- |
-| [@functionFBTC/sdk-agent](./packages/sdk-agent) | Framework-agnostic agent tools (Vercel AI SDK / LangChain) |
-| [@functionFBTC/sdk-agentkit](./packages/sdk-agentkit) | Coinbase AgentKit action provider |
+| [@functionfbtc/sdk-agent](./packages/sdk-agent) | Framework-agnostic agent tools (Vercel AI SDK / LangChain) |
+| [@functionfbtc/sdk-agentkit](./packages/sdk-agentkit) | Coinbase AgentKit action provider |
 
 ## Apps
 
@@ -26,13 +26,13 @@ yarn build
 ### Agent chat (web)
 
 ```bash
-yarn workspace @functionFBTC/example-agent-chat dev
+yarn workspace @functionfbtc/example-agent-chat dev
 ```
 
 ### AgentKit CLI
 
 ```bash
-yarn workspace @functionFBTC/example-agentkit-cli start
+yarn workspace @functionfbtc/example-agentkit-cli start
 ```
 
 ## Capabilities

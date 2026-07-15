@@ -53,7 +53,7 @@ export interface FbtcActionProviderOptions {
  *
  * Usage:
  * ```ts
- * import { fbtcActionProvider } from '@functionFBTC/sdk-agentkit';
+ * import { fbtcActionProvider } from '@functionfbtc/sdk-agentkit';
  *
  * const agentkit = await AgentKit.from({
  *   walletProvider,

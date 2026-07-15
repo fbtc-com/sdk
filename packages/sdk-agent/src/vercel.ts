@@ -3,7 +3,7 @@
  *
  * Usage:
  * ```ts
- * import { functionTools } from "@functionFBTC/sdk-agent/vercel";
+ * import { functionTools } from "@functionfbtc/sdk-agent/vercel";
  * import { streamText } from "ai";
  *
  * const result = streamText({ model, tools: functionTools, messages });

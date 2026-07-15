@@ -10,7 +10,7 @@ import {
   fbtcActionProvider,
   isFbtcNetworkId,
   NETWORK_ID_TO_VIEM_CHAIN,
-} from "@functionFBTC/sdk-agentkit";
+} from "@functionfbtc/sdk-agentkit";
 import type { Chain } from "viem";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";

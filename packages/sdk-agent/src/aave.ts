@@ -4,7 +4,7 @@
  * The tool prepares unsigned ERC-20 approval and Pool.supply transactions.
  * The connected wallet remains responsible for signing both transactions.
  *
- * NOTE: Market constants are mirrored in @functionFBTC/sdk-agentkit `src/aave.ts`.
+ * NOTE: Market constants are mirrored in @functionfbtc/sdk-agentkit `src/aave.ts`.
  * Keep addresses / decimals / reserve URLs in sync when either side changes.
  */
 import type { Address } from 'viem';

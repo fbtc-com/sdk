@@ -1,11 +1,11 @@
-# @functionFBTC/sdk-agentkit
+# @functionfbtc/sdk-agentkit
 
 Function FBTC Action Provider for [Coinbase AgentKit](https://docs.cdp.coinbase.com/agentkit/docs/welcome).
 
 ## Install
 
 ```bash
-npm install @functionFBTC/sdk-agentkit @coinbase/agentkit
+npm install @functionfbtc/sdk-agentkit @coinbase/agentkit
 ```
 
 ## Actions
@@ -20,7 +20,7 @@ npm install @functionFBTC/sdk-agentkit @coinbase/agentkit
 
 ```ts
 import { AgentKit, walletActionProvider } from '@coinbase/agentkit';
-import { fbtcActionProvider } from '@functionFBTC/sdk-agentkit';
+import { fbtcActionProvider } from '@functionfbtc/sdk-agentkit';
 
 const agentkit = await AgentKit.from({
   walletProvider,
