@@ -1,0 +1,208 @@
+name: Create SDK Release Branch (bot)
+
+on:
+  pull_request:
+    types: [labeled]
+    branches-ignore:
+      - 'sdk-release/**'  # avoid loops
+
+concurrency:
+  group: create-sdk-release-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # create ref (branch)
+  pull-requests: write     # open PR
+  actions: read
+
+jobs:
+  create-release-branch:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'create-tagged-sdk-release')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.SDK_RELEASE_BOT_TOKEN }}
+      PACKAGE_JSON_PATH: ./packages/sdk-agent/package.json
+      PACKAGE_NAME: "@functionfbtc/sdk-agent"
+      PACKAGE_SAFE_NAME: "functionfbtc-sdk-agent"
+    steps:
+      - name: Require label adder to be in allowlist
+        if: github.event.action == 'labeled'
+        env:
+          APPROVERS: ${{ vars.SDK_RELEASE_MANAGERS }}
+          ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ secrets.SDK_RELEASE_BOT_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # ---------- Allowlist check ----------
+          norm() {
+            # trim spaces, strip leading @, lowercase
+            echo "$1" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g; s/^@//' | tr '[:upper:]' '[:lower:]'
+          }
+
+          actor_norm="$(norm "$ACTOR")"
+
+          allowlist="$(
+            printf "%s\n" "$APPROVERS" \
+            | tr ',;' '\n' \
+            | sed -E 's/^[[:space:]]+|[[:space:]]+$//g;/^$/d' \
+            | sed -E 's/^@//' \
+            | tr '[:upper:]' '[:lower:]'
+          )"
+
+          echo "🧾 Allowlist from variable: $(printf "%s" "$allowlist" | paste -sd ',' -)"
+          echo "👤 Actor: ${actor_norm}"
+
+          if ! printf "%s\n" "$allowlist" | grep -qx "$actor_norm"; then
+            echo "🚫 User '$ACTOR' is not in the release allowlist. Aborting."
+            exit 1
+          fi
+
+          echo "✅ '$ACTOR' is in the allowlist."
+
+          # ---------- Require at least one approved review ----------
+          echo "🔍 Checking for approved reviews on PR #${PR_NUMBER}..."
+
+          reviews_resp=$(curl -sS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/reviews")
+
+          # Count distinct reviewers with state == APPROVED
+          approved_count=$(echo "$reviews_resp" | jq '[ .[] | select(.state == "APPROVED") | .user.login ] | unique | length')
+
+          echo "✅ Found ${approved_count} approving reviewer(s)."
+
+          if [ "$approved_count" -lt 1 ]; then
+            echo "🚫 PR does not have any approvals yet. Refusing to create release branch."
+            # Optional: auto-remove the label to give feedback in the UI
+            curl -sS -X DELETE \
+               -H "Authorization: Bearer ${GH_TOKEN}" \
+               -H "Accept: application/vnd.github+json" \
+               "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/labels/create-sdk-release" || true
+            exit 1
+          fi
+
+          echo "✅ PR has at least one approval; allowed to proceed with release-branch creation."
+
+      - name: Check out PR head commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Read version from package.json and sanity check package name
+        id: ver
+        run: |
+          if [ ! -f "${PACKAGE_JSON_PATH}" ]; then
+            echo "Could not find ${PACKAGE_JSON_PATH}"; exit 1
+          fi
+          NAME=$(node -p "require('${PACKAGE_JSON_PATH}').name || ''")
+          VER=$(node -p "require('${PACKAGE_JSON_PATH}').version || ''")
+
+          if [ -z "$VER" ]; then
+            echo "Missing version in ${PACKAGE_JSON_PATH}"; exit 1
+          fi
+          if [ "$NAME" != "${PACKAGE_NAME}" ]; then
+            echo "Expected package name '${PACKAGE_NAME}' but found '${NAME}' in ${PACKAGE_JSON_PATH}"; exit 1
+          fi
+
+          echo "version=$VER" >> $GITHUB_OUTPUT
+
+      - name: Fail if version already exists on npm (including pre-releases)
+        run: |
+          VER='${{ steps.ver.outputs.version }}'
+          set +e
+          npm view "${PACKAGE_NAME}@${VER}" >/dev/null 2>&1
+          EXISTS=$?
+          set -e
+          if [ "$EXISTS" -eq 0 ]; then
+            echo "Version already published on npm: ${PACKAGE_NAME}@${VER}"
+            exit 1
+          fi
+
+      - name: Compute branch name and ensure it doesn't exist
+        id: naming
+        run: |
+          REL_BRANCH="sdk-release/${PACKAGE_SAFE_NAME}@${{ steps.ver.outputs.version }}"
+          echo "rel_branch=$REL_BRANCH" >> $GITHUB_OUTPUT
+
+          # 404 means the ref does not exist yet (good)
+          set +e
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/git/ref/heads/${REL_BRANCH})
+          set -e
+
+          if [ "$CODE" -ne 404 ]; then
+            echo "Target branch already exists or API error: ${REL_BRANCH} (HTTP $CODE)"
+            exit 1
+          fi
+
+      - name: Create release branch at PR base SHA (API)
+        env:
+          GH_TOKEN: ${{ secrets.SDK_RELEASE_BOT_TOKEN }}
+          REL_BRANCH: ${{ steps.naming.outputs.rel_branch }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n --arg ref "refs/heads/${REL_BRANCH}" --arg sha "${BASE_SHA}" '{ref:$ref, sha:$sha}')
+          resp=$(curl -sS -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs \
+            -d "${payload}")
+          body="${resp%$'\n'*}"; code="${resp##*$'\n'}"
+          if [ "$code" -ge 300 ]; then
+            echo "GitHub API error ($code) creating ref: $body"
+            exit 1
+          fi
+          echo "Created branch ${REL_BRANCH} at base ${BASE_SHA}"
+
+
+      - name: Open PR (feature → sdk-release branch) via GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.SDK_RELEASE_BOT_TOKEN }}
+          REL_BRANCH: ${{ steps.naming.outputs.rel_branch }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PACKAGE_NAME: "@functionfbtc/sdk-agent"
+          PKG_VER: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          title="Prepare release: ${REL_BRANCH}"
+          bodyText="Automated release PR opened by bot from #${PR_NUMBER}
+
+          - Package: ${PACKAGE_NAME}
+          - Version: ${PKG_VER}
+          - Source: \`${HEAD_REF}\` @ ${{ github.event.pull_request.head.sha }}"
+
+              payload=$(jq -n \
+                --arg title "$title" \
+                --arg head  "$HEAD_REF" \
+                --arg base  "$REL_BRANCH" \
+                --arg body  "$bodyText" \
+                '{title:$title, head:$head, base:$base, body:$body}')
+
+              resp=$(curl -sS -w "\n%{http_code}" -X POST \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                https://api.github.com/repos/${{ github.repository }}/pulls \
+                -d "${payload}")
+
+              body="${resp%$'\n'*}"
+              code="${resp##*$'\n'}"
+              if [ "$code" -ge 300 ]; then
+                echo "GitHub API error ($code) creating PR: $body"
+                exit 1
+              fi
+              echo "Opened PR targeting ${REL_BRANCH}"

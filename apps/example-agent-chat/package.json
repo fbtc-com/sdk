@@ -1,0 +1,47 @@
+{
+  "name": "@functionfbtc/example-agent-chat",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Example frontend app with embedded Function FBTC AI assistant using sdk-agent",
+  "scripts": {
+    "dev": "concurrently \"npx tsx watch dev-server.ts\" \"vite\"",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:e2e": "ENABLE_E2E=true vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/openai": "^1.0.0",
+    "@ai-sdk/react": "^1.0.0",
+    "@functionfbtc/sdk-agent": "workspace:*",
+    "@tanstack/react-query": "^5.50.0",
+    "ai": "^4.0.0",
+    "buffer": "^6.0.3",
+    "connectkit": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.0",
+    "remark-gfm": "^4.0.0",
+    "viem": "^2.23.0",
+    "wagmi": "^2.14.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^9.1.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.0"
+  }
+}
