@@ -12,8 +12,6 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    container:
-      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-ci
       cancel-in-progress: true
@@ -51,8 +49,6 @@ jobs:
   publish-dev:
     needs: build-and-test
     runs-on: ubuntu-latest
-    container:
-      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
     permissions:
       contents: read
       packages: write

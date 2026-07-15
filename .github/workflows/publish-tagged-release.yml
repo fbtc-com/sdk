@@ -19,8 +19,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: production
-    container:
-      image: ${{ vars.AWS_ECR_REGISTRY }}/library/alpine-git-node-aws:latest
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-publish
       cancel-in-progress: true
@@ -98,4 +96,3 @@ jobs:
       - name: Publish
         working-directory: ./packages/${{ github.event.inputs.package }}/
         run: npm publish --tag ${{ github.event.inputs.tag }} --registry https://registry.npmjs.org
-
