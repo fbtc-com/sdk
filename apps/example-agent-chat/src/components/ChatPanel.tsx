@@ -7,14 +7,14 @@ import { useAccount } from 'wagmi';
 
 import logoCircle from '../assets/logo-green-circle.svg';
 import { classifyHex, getExplorerUrl } from '../lib/explorer';
+import {
+  extractSdkErrors,
+  extractTxActions,
+  looksLikePreparedTxWithoutPayload,
+  serializeMessageForStorage,
+  type TxResult,
+} from '../lib/tx-actions';
 import { TransactionPrompt } from './TransactionPrompt';
-
-interface TxResult {
-  action: string;
-  method: string;
-  description: string;
-  params: Record<string, unknown>;
-}
 
 interface WalletEvent {
   type: 'wallet_change';
@@ -51,13 +51,11 @@ function loadMessages(addr: string | undefined): Message[] {
 function saveMessages(addr: string | undefined, messages: Message[]): void {
   if (!addr) return;
   try {
-    // Only persist user and assistant text messages (skip tool invocations with large data)
-    const serializable = messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      createdAt: m.createdAt,
-    }));
+    // Persist text plus any sdk_execute tool results so TransactionPrompt
+    // cards survive panel remount / page reload.
+    const serializable = messages.map((m) =>
+      serializeMessageForStorage(m as unknown as Record<string, unknown>),
+    );
     localStorage.setItem(storageKey(addr), JSON.stringify(serializable));
   } catch {
     // localStorage full or unavailable — silently ignore
@@ -99,7 +97,13 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
     id: address ? `chat-${address.toLowerCase()}` : 'chat-anonymous',
     initialMessages: loadMessages(address),
     experimental_prepareRequestBody: ({ messages: msgs }) => ({
-      messages: msgs,
+      // Send text-only history. UI may keep toolInvocations for Execute cards,
+      // but incomplete tool pairs break the model request / subsequent prepares.
+      messages: msgs.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+      })),
       walletContext: walletContextRef.current,
     }),
   });
@@ -449,38 +453,12 @@ function MessageBubble({
 }) {
   const isUser = message.role === 'user';
 
-  const txActions: TxResult[] = [];
-  const seen = new Set<string>();
-
-  function tryExtract(r: Record<string, unknown> | undefined) {
-    if (r?.action === 'sdk_execute' && r.method && r.description && r.params) {
-      // Deduplicate by method + description
-      const key = `${r.method}:${r.description}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        txActions.push(r as unknown as TxResult);
-      }
-    }
-  }
-
-  // Check parts array (Vercel AI SDK v4 format)
-  const parts = (message.parts || []) as Array<Record<string, unknown>>;
-  for (const part of parts) {
-    if (part.type === 'tool-invocation') {
-      const inv = part.toolInvocation as Record<string, unknown> | undefined;
-      if (inv?.state === 'result') {
-        tryExtract(inv.result as Record<string, unknown> | undefined);
-      }
-    }
-  }
-  // Check toolInvocations array (Vercel AI SDK v3 / legacy format)
-  for (const inv of (message.toolInvocations || []) as Array<
-    Record<string, unknown>
-  >) {
-    if (inv.state === 'result') {
-      tryExtract(inv.result as Record<string, unknown> | undefined);
-    }
-  }
+  const txActions: TxResult[] = extractTxActions(message);
+  const sdkErrors = extractSdkErrors(message);
+  const missingPayload =
+    !isUser &&
+    txActions.length === 0 &&
+    looksLikePreparedTxWithoutPayload(message);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -576,6 +554,24 @@ function MessageBubble({
         >
           {formatAddresses(message.content as string)}
         </Markdown>
+
+        {missingPayload && (
+          <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            {sdkErrors.length > 0 ? (
+              <>
+                Prepare failed
+                {sdkErrors[0].tool ? ` (${sdkErrors[0].tool})` : ''}:{' '}
+                {sdkErrors[0].error}. Ask again after fixing the issue.
+              </>
+            ) : (
+              <>
+                No executable transaction was attached. Ask again to prepare the
+                transaction — then click <strong>Execute Transaction</strong> on
+                the card that appears (the wallet does not open automatically).
+              </>
+            )}
+          </div>
+        )}
 
         {txActions.map((tx, i) => (
           <TransactionPrompt

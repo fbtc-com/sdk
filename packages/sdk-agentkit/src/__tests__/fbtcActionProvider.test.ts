@@ -78,5 +78,29 @@ describe("FbtcActionProvider", () => {
       expect(parsed.success).toBe(false);
       expect(parsed.error).toContain("ethereum-mainnet");
     });
+
+    it("returns error when wallet networkId mismatches withdraw target", async () => {
+      const result = await provider.withdrawFbtcFromAave(mockWalletProvider, {
+        amount: "0.1",
+        networkId: "mantle-mainnet",
+      });
+      const parsed = JSON.parse(result);
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toContain("mantle-mainnet");
+    });
+
+    it("returns error when wallet networkId mismatches borrow target", async () => {
+      const result = await provider.borrowStablecoinFromAave(
+        mockWalletProvider,
+        {
+          asset: "USDC",
+          amount: "100",
+          networkId: "ethereum-mainnet",
+        },
+      );
+      const parsed = JSON.parse(result);
+      expect(parsed.success).toBe(false);
+      expect(parsed.error).toContain("ethereum-mainnet");
+    });
   });
 });

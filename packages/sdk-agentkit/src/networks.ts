@@ -5,7 +5,7 @@ import { mainnet, mantle } from "viem/chains";
 /** Supported AgentKit / FBTC network IDs. */
 export type FbtcNetworkId = "ethereum-mainnet" | "mantle-mainnet";
 
-/** Default network when the user does not name one. */
+/** Default networkId for programmatic helpers only — tools/actions require an explicit networkId. */
 export const DEFAULT_NETWORK_ID: FbtcNetworkId = "ethereum-mainnet";
 
 /**

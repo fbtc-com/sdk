@@ -3,22 +3,45 @@ export {
   AAVE_FBTC_MARKETS,
   AAVE_FBTC_MARKETS_BY_NETWORK,
   AAVE_FBTC_RESERVE_URL,
+  AAVE_MANTLE_FBTC_EMODE_CATEGORY_ID,
+  AAVE_STABLECOIN_SYMBOLS,
+  AAVE_V3_ETHEREUM_ORACLE,
   AAVE_V3_ETHEREUM_POOL,
+  AAVE_V3_MANTLE_ORACLE,
   AAVE_V3_MANTLE_POOL,
+  AAVE_VARIABLE_RATE_MODE,
   type AaveFbtcMarket,
+  type AaveStablecoin,
+  type AaveStablecoinSymbol,
+  type AaveSupplySetupState,
+  AFBTC_ETHEREUM_ADDRESS,
+  AFBTC_MANTLE_ADDRESS,
+  assertPostBorrowLtvWithinLimit,
+  assetAmountToBaseCurrency,
+  buildAaveBorrowStablecoinTransaction,
+  buildAaveRepayStablecoinTransactions,
   buildAaveSupplyFbtcTransactions,
+  buildAaveWithdrawFbtcTransaction,
+  ensureBorrowWithinMaxLtv,
   FBTC_DECIMALS,
   FBTC_ETHEREUM_ADDRESS,
   FBTC_MANTLE_ADDRESS,
+  fetchAaveSupplySetupState,
+  fetchAaveUserAccountData,
   getAaveFbtcMarket,
   getAaveFbtcMarketByNetworkId,
   getAaveFbtcReserveDetails,
-} from "./aave";
+  getAaveStablecoin,
+  isReserveUsedAsCollateral,
+  MAX_POST_BORROW_LTV_BPS,
+  REPAY_MAX_APPROVE_BUFFER_BPS,
+  resolveRepayAmounts,
+} from './aave';
 export {
   FbtcActionProvider,
   fbtcActionProvider,
   type FbtcActionProviderOptions,
-} from "./fbtcActionProvider";
+} from './fbtcActionProvider';
 export {
   DEFAULT_NETWORK_ID,
   type FbtcNetworkId,
@@ -32,16 +55,25 @@ export {
   resolveNetwork,
   resolveNetworkId,
   SUPPORTED_NETWORK_IDS,
-} from "./networks";
+} from './networks';
 export {
+  BorrowStablecoinFromAaveSchema,
   GetAaveFbtcReserveSchema,
+  GetAaveUserAccountSchema,
+  GetAfbtcBalanceSchema,
   GetFbtcBalanceSchema,
+  RepayStablecoinToAaveSchema,
   SupplyFbtcToAaveSchema,
-} from "./schemas";
+  WithdrawFbtcFromAaveSchema,
+} from './schemas';
 export {
   formatError,
   formatSuccess,
   getErc20Balance,
+  makeNetworkPublicClient,
   resolveRpcUrl,
+  RPC_HTTP_TIMEOUT_MS,
   type RpcUrlByNetwork,
-} from "./utils";
+  TX_RECEIPT_TIMEOUT_MS,
+  waitForTxReceipt,
+} from './utils';

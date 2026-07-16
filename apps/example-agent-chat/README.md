@@ -6,9 +6,10 @@ and Aave V3 Mantle with wallet confirmation.
 ## Flow
 
 1. Connect a wallet on Ethereum or Mantle.
-2. Ask the assistant to supply an amount of FBTC to Aave V3 Ethereum or Mantle.
-3. Review and sign the exact-amount FBTC approval.
-4. After approval confirms, review and sign the Aave `Pool.supply` call.
+2. Ask the assistant to supply / withdraw / borrow / repay on Aave V3.
+3. When prepare succeeds, an **Execute Transaction** card appears under the reply.
+4. Click **Execute Transaction** — the wallet opens to sign (it does not open automatically).
+5. For supply/repay: sign approve, wait for confirmation, then sign the Pool call.
 
 Supported markets:
 
@@ -37,7 +38,8 @@ Example prompts:
 ```text
 Supply 0.1 FBTC to Aave V3 Ethereum.
 Supply 0.1 FBTC to Aave V3 Mantle.
+Borrow 0.1 USDT from Aave V3 Mantle.
 ```
 
-The assistant prepares calldata only. The connected wallet signs and submits
-both transactions.
+The assistant prepares calldata only. Click **Execute Transaction** in the chat
+card so the connected wallet can sign and submit.

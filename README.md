@@ -1,6 +1,6 @@
 # Function FBTC Agent SDK
 
-TypeScript SDK and examples for integrating Function FBTC with AI agents — including Aave V3 supply on Ethereum.
+TypeScript SDK and examples for integrating Function FBTC with AI agents — including Aave V3 on Ethereum and Mantle.
 
 ## Packages
 
@@ -38,8 +38,10 @@ yarn workspace @functionfbtc/example-agentkit-cli start
 ## Capabilities
 
 - Look up Function FBTC token metadata and ERC-20 balances
-- Inspect the Aave V3 Ethereum FBTC reserve
-- Prepare / execute FBTC supply to Aave V3 (`approve` + `Pool.supply`)
+- Inspect Aave V3 FBTC reserves on Ethereum and Mantle
+- Read aFBTC balance, health factor, LTV, and liquidation threshold
+- Prepare / execute FBTC supply and withdraw
+- Borrow and repay USDC / USDT / USDe (variable rate; Mantle USDT = USDT0)
 
 ## Commands
 
