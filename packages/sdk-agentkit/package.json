@@ -1,6 +1,6 @@
 {
   "name": "@functionfbtc/sdk-agentkit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Function FBTC Action Provider for Coinbase AgentKit — balance, Aave V3 supply",
   "repository": {
     "type": "git",

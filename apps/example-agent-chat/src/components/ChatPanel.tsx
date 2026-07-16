@@ -191,13 +191,13 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
     ? [
         'Check the FBTC reserve on Aave V3 Ethereum.',
         'Supply 0.1 FBTC to Aave V3 Mantle.',
+        'Borrow 0.1 USDT from Aave V3 Mantle.',
         'Check my FBTC balance on Ethereum.',
-        'Explain supplying FBTC on Ethereum vs Mantle.',
       ]
     : [
         'Check the FBTC reserve on Aave V3 Ethereum.',
         'What is FBTC?',
-        'How does supplying FBTC to Aave V3 Ethereum or Mantle work?',
+        'How does borrowing stablecoins against FBTC work?',
         'What should I know before supplying on Mantle?',
       ];
 
@@ -287,7 +287,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
         {messages.length === 0 && (
           <p className="text-center text-sm text-[var(--color-text-muted)] pt-8">
             {address
-              ? 'Ask me about your balances, staking, or DeFi positions.'
+              ? 'Ask me about your balances, supplying FBTC, or borrowing stablecoins.'
               : 'Connect your wallet for personalized help, or ask general questions.'}
           </p>
         )}
@@ -324,12 +324,20 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             ) {
               followUps.push(
                 'Check my FBTC balance on Ethereum',
-                'Show the Aave V3 Ethereum FBTC reserve',
+                'Borrow 0.1 USDT from Aave V3 Ethereum',
+              );
+            } else if (
+              text.includes('borrow') &&
+              (text.includes('confirmed') || text.includes('submitted'))
+            ) {
+              followUps.push(
+                'Check my Aave V3 account health factor',
+                'Repay my stablecoin debt on Aave V3 Ethereum',
               );
             } else if (text.includes('aave') && text.includes('fbtc')) {
               followUps.push(
                 'Supply 0.1 FBTC to Aave V3 Ethereum',
-                'Check my FBTC balance on Mantle',
+                'Borrow 0.1 USDT from Aave V3 Mantle',
               );
             }
 
@@ -381,7 +389,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             onChange={handleInputChange}
             placeholder={
               address
-                ? 'Ask about your balances, staking...'
+                ? 'Ask about your balances, supplying, borrowing...'
                 : 'Ask about Function...'
             }
             className="flex-1 rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-teal)] transition-colors"
