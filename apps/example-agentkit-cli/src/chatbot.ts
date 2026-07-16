@@ -132,7 +132,7 @@ async function main() {
 
   console.log('Type "exit" to quit.\n');
   console.log(
-    "Try: \"What's my FBTC balance?\" or \"Show the Aave FBTC reserve.\"\n",
+    'Try: "What\'s my FBTC balance?", "Show the Aave FBTC reserve.", or "Borrow 0.1 USDT from Aave V3 Mantle."\n',
   );
   prompt();
 }

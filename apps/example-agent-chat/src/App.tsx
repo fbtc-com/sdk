@@ -14,31 +14,31 @@ const features = [
   },
   {
     index: '02',
-    title: 'Approve FBTC',
+    title: 'Supply FBTC',
     description:
-      'Approve the Aave V3 Pool on Ethereum or Mantle to transfer the FBTC amount you choose.',
-    example: '"Approve 0.1 FBTC for Aave V3 Mantle"',
-  },
-  {
-    index: '03',
-    title: 'Supply to Aave V3',
-    description:
-      'Call Pool.supply on Ethereum or Mantle and receive the corresponding Aave position.',
+      'Approve and supply FBTC to Aave V3 on Ethereum or Mantle and receive the corresponding aFBTC position.',
     example: '"Supply 0.1 FBTC to Aave V3 Ethereum"',
   },
   {
+    index: '03',
+    title: 'Borrow stablecoins',
+    description:
+      'Borrow USDC, USDT, or USDe against your FBTC collateral. On Mantle, USDT is USDT0.',
+    example: '"Borrow 0.1 USDT from Aave V3 Mantle"',
+  },
+  {
     index: '04',
+    title: 'Withdraw & repay',
+    description:
+      'Withdraw FBTC collateral or repay stablecoin debt — use an amount or "max" to clear a position.',
+    example: '"Repay my stablecoin debt on Aave V3 Ethereum"',
+  },
+  {
+    index: '05',
     title: 'Pick the network',
     description:
       'Use Ethereum Mainnet or Mantle — the wallet switches to the prepared transaction chain.',
     example: '"Confirm I am on the correct network"',
-  },
-  {
-    index: '05',
-    title: 'Confirm in wallet',
-    description:
-      'Review both approval and supply before your connected wallet signs.',
-    example: '"Execute the FBTC supply transaction"',
   },
   {
     index: '06',
@@ -79,8 +79,8 @@ export function App() {
             </h1>
             <p className="mt-8 max-w-2xl text-base leading-7 text-[var(--color-text-muted)] sm:text-lg">
               Meet the Function assistant for FBTC on Aave V3 Ethereum and
-              Mantle. Review the reserve and supply with transparent wallet
-              confirmation.
+              Mantle. Supply FBTC, borrow stablecoins, and manage your position
+              with transparent wallet confirmation.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <button
@@ -116,8 +116,9 @@ export function App() {
               </h2>
             </div>
             <p className="max-w-md text-sm leading-6 text-[var(--color-text-muted)]">
-              From market discovery to position monitoring, every step stays
-              visible and under your control.
+              From reserve discovery to supplying FBTC, borrowing stablecoins,
+              and repaying debt — every step stays visible and under your
+              control.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-3">

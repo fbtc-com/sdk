@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Example apps: align landing page, chat suggestions, and CLI prompts with the borrow stablecoins / withdraw / repay capabilities added in 0.2.0
+- `example-agentkit-cli` autonomous mode adds a read-only Aave V3 account health factor check
+
 ## 0.2.0
 
 - Add `get_aave_atoken_balance` to read aFBTC (aToken) balances on Ethereum and Mantle

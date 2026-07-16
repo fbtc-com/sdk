@@ -18,6 +18,7 @@ const TASKS = [
   "What is my Function FBTC balance on Ethereum mainnet?",
   "Show the Aave V3 Ethereum FBTC reserve details.",
   "Show the Aave V3 Mantle FBTC reserve details.",
+  "Check my Aave V3 Ethereum account health factor, LTV, and liquidation threshold.",
 ];
 
 const TASK_TIMEOUT_MS = Number(process.env.TASK_TIMEOUT_MS) || 60_000;
