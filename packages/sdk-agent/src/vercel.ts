@@ -16,6 +16,8 @@ import { allTools, type ToolDefinition } from './tools';
 /**
  * Converts a framework-agnostic ToolDefinition into a Vercel AI SDK tool.
  * Uses Zod schemas directly — Vercel AI SDK accepts Zod natively.
+ * Tool failures return a structured error object so the model cannot invent
+ * a "prepared" transaction after a silent validation / RPC failure.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toAiTool(def: ToolDefinition<any, any>): any {
@@ -29,7 +31,18 @@ function toAiTool(def: ToolDefinition<any, any>): any {
     name: def.name,
     description: def.description,
     parameters: def.schema,
-    execute: def.execute,
+    execute: async (...args: unknown[]) => {
+      try {
+        return await def.execute(args[0]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          action: 'sdk_error',
+          tool: def.name,
+          error: message,
+        };
+      }
+    },
   });
 }
 

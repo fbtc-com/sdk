@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { resolveRpcUrl } from "../utils";
+import { resolveRpcUrl, waitForTxReceipt } from "../utils";
 
 describe("resolveRpcUrl", () => {
   const original = {
@@ -49,5 +49,24 @@ describe("resolveRpcUrl", () => {
         "ethereum-mainnet": "https://eth.example",
       }),
     ).toBe("https://mantle.env");
+  });
+});
+
+describe("waitForTxReceipt", () => {
+  it("falls back to getTransactionReceipt when wait times out", async () => {
+    const receipt = { transactionHash: "0xabc", status: "success" };
+    const client = {
+      waitForTransactionReceipt: async () => {
+        throw new Error("The request took too long to respond.");
+      },
+      getTransactionReceipt: async () => receipt,
+    };
+
+    const result = await waitForTxReceipt({
+      networkId: "ethereum-mainnet",
+      hash: "0xabc" as `0x${string}`,
+      client: client as never,
+    });
+    expect(result).toBe(receipt);
   });
 });

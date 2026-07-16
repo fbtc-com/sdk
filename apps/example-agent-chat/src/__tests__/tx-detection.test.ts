@@ -4,49 +4,12 @@
  */
 import { describe, expect, it } from 'vitest';
 
-interface TxResult {
-  action: string;
-  method: string;
-  description: string;
-  params: Record<string, unknown>;
-}
-
-/**
- * Mirrors the detection logic in ChatPanel's MessageBubble.
- */
-function extractTxActions(message: Record<string, unknown>): TxResult[] {
-  const txActions: TxResult[] = [];
-  const seen = new Set<string>();
-
-  function tryExtract(r: Record<string, unknown> | undefined) {
-    if (r?.action === 'sdk_execute' && r.method && r.description && r.params) {
-      const key = `${r.method}:${r.description}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        txActions.push(r as unknown as TxResult);
-      }
-    }
-  }
-
-  const parts = (message.parts || []) as Array<Record<string, unknown>>;
-  for (const part of parts) {
-    if (part.type === 'tool-invocation') {
-      const inv = part.toolInvocation as Record<string, unknown> | undefined;
-      if (inv?.state === 'result') {
-        tryExtract(inv.result as Record<string, unknown> | undefined);
-      }
-    }
-  }
-  for (const inv of (message.toolInvocations || []) as Array<
-    Record<string, unknown>
-  >) {
-    if (inv.state === 'result') {
-      tryExtract(inv.result as Record<string, unknown> | undefined);
-    }
-  }
-
-  return txActions;
-}
+import {
+  extractTxActions,
+  looksLikePreparedTxWithoutPayload,
+  resolveTxActionsForMessage,
+  serializeMessageForStorage,
+} from '../lib/tx-actions';
 
 const AAVE_TOOL_RESULT = {
   action: 'sdk_execute',
@@ -67,6 +30,22 @@ const AAVE_TOOL_RESULT = {
     ],
   },
   description: 'Supply 0.1 FBTC to Aave V3',
+};
+
+const BORROW_TOOL_RESULT = {
+  action: 'sdk_execute',
+  method: 'aave.borrowStablecoin',
+  params: {
+    chainId: 5000,
+    transactions: [
+      {
+        to: '0x458F293454fE0d67EC0655f3672301301DD51422',
+        data: '0xborrow',
+        label: 'Borrow 0.1 USDT0',
+      },
+    ],
+  },
+  description: 'Borrow 0.1 USDT0 from Aave V3 Mantle',
 };
 
 describe('tx action detection', () => {
@@ -90,6 +69,43 @@ describe('tx action detection', () => {
     expect(actions).toHaveLength(1);
     expect(actions[0].method).toBe('aave.supplyFbtc');
     expect(actions[0].params.chainId).toBe(1);
+  });
+
+  it('detects Aave borrow in v4 parts format', () => {
+    const message = {
+      role: 'assistant',
+      content: 'Prepared borrow.',
+      parts: [
+        {
+          type: 'tool-invocation',
+          toolInvocation: {
+            state: 'result',
+            toolName: 'prepare_aave_borrow_stablecoin',
+            result: BORROW_TOOL_RESULT,
+          },
+        },
+      ],
+    };
+    const actions = extractTxActions(message);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].method).toBe('aave.borrowStablecoin');
+  });
+
+  it('detects stringified tool results', () => {
+    const message = {
+      role: 'assistant',
+      content: 'Prepared.',
+      toolInvocations: [
+        {
+          state: 'result',
+          toolName: 'prepare_aave_borrow_stablecoin',
+          result: JSON.stringify(BORROW_TOOL_RESULT),
+        },
+      ],
+    };
+    const actions = extractTxActions(message);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].method).toBe('aave.borrowStablecoin');
   });
 
   it('detects Aave FBTC supply in legacy toolInvocations format', () => {
@@ -204,8 +220,80 @@ describe('tx action detection', () => {
   });
 
   it('handles empty message (no parts or toolInvocations)', () => {
-    const message = { role: 'user', content: 'Hello' };
-    const actions = extractTxActions(message);
-    expect(actions).toHaveLength(0);
+    expect(extractTxActions({ role: 'assistant', content: 'Hi' })).toHaveLength(
+      0,
+    );
+  });
+
+  it('persists sdk_execute results across serialize → extract', () => {
+    const live = {
+      id: 'm1',
+      role: 'assistant',
+      content: 'Prepared borrow.',
+      parts: [
+        {
+          type: 'tool-invocation',
+          toolInvocation: {
+            state: 'result',
+            toolName: 'prepare_aave_borrow_stablecoin',
+            result: BORROW_TOOL_RESULT,
+          },
+        },
+      ],
+    };
+    const stored = serializeMessageForStorage(live);
+    expect(stored.content).toBe('Prepared borrow.');
+    expect(extractTxActions(stored)).toHaveLength(1);
+    expect(extractTxActions(stored)[0].method).toBe('aave.borrowStablecoin');
+  });
+
+  it('flags assistant text that claims prepared without sdk_execute', () => {
+    expect(
+      looksLikePreparedTxWithoutPayload({
+        role: 'assistant',
+        content:
+          'The borrow transaction is prepared. Please confirm the transaction in your wallet.',
+      }),
+    ).toBe(true);
+  });
+
+  it('does not flag when sdk_execute is present', () => {
+    expect(
+      looksLikePreparedTxWithoutPayload({
+        role: 'assistant',
+        content: 'Prepared borrow. Please confirm.',
+        toolInvocations: [
+          {
+            state: 'result',
+            toolName: 'prepare_aave_borrow_stablecoin',
+            result: BORROW_TOOL_RESULT,
+          },
+        ],
+      }),
+    ).toBe(false);
+  });
+
+  it('attaches tool result from prior empty assistant message to text reply', () => {
+    const messages = [
+      {
+        role: 'assistant',
+        content: '',
+        toolInvocations: [
+          {
+            state: 'result',
+            toolName: 'prepare_aave_borrow_stablecoin',
+            result: BORROW_TOOL_RESULT,
+          },
+        ],
+      },
+      {
+        role: 'assistant',
+        content: 'Borrow is prepared. Click Execute.',
+      },
+    ];
+    expect(resolveTxActionsForMessage(messages, 1)).toHaveLength(1);
+    expect(resolveTxActionsForMessage(messages, 1)[0].method).toBe(
+      'aave.borrowStablecoin',
+    );
   });
 });

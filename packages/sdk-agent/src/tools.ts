@@ -6,8 +6,13 @@ import { erc20Abi, formatUnits } from 'viem';
 import type { z } from 'zod';
 
 import {
+  getAaveAtokenBalance,
   getAaveFbtcReserve,
+  getAaveUserAccount,
+  prepareAaveBorrowStablecoin,
+  prepareAaveRepayStablecoin,
   prepareAaveSupplyFbtc,
+  prepareAaveWithdrawFbtc,
 } from './aave';
 import {
   FUNCTION_ASSETS,
@@ -18,6 +23,7 @@ import {
 import { getChainConfig, makePublicClient } from './chains';
 import {
   TokenBalanceSchema,
+  type TokenBalanceParams,
   TokenBalanceZod,
   TokenInfoSchema,
   TokenInfoZod,
@@ -116,14 +122,13 @@ export const getTokenInfo: ToolDefinition<
 };
 
 export const getTokenBalance: ToolDefinition<
-  { tokenAddress: string; address: string; chainId: number },
+  TokenBalanceParams,
   {
     balance: string;
     symbol: string;
     tokenAddress: string;
     chain: string;
     chainId: number;
-    error?: string;
   }
 > = {
   name: 'get_token_balance',
@@ -133,63 +138,57 @@ export const getTokenBalance: ToolDefinition<
     'REQUIRED: pass chainId 1 for Ethereum or chainId 5000 for Mantle when the user names a network. ' +
     'Use FBTC address 0xc96de26018a54d51c097160568752c4e3bd6c364.',
   parameters: TokenBalanceSchema as Record<string, unknown>,
-  schema: TokenBalanceZod,
+  schema: TokenBalanceZod as z.ZodType<TokenBalanceParams>,
   execute: async (params) => {
     const { tokenAddress, address, chainId } = TokenBalanceZod.parse(params);
     const config = getChainConfig(chainId);
     const client = makePublicClient(config.chainId);
 
-    try {
-      const reportedChainId = await client.getChainId();
-      if (reportedChainId !== config.chainId) {
-        throw new Error(
-          `RPC chain mismatch: expected chainId ${config.chainId} (${config.name}), ` +
-            `but the RPC reported ${reportedChainId}. ` +
-            `Set ${config.chainId === 5000 ? 'MANTLE_RPC_URL' : 'ETH_RPC_URL'} to an endpoint on the correct chain.`,
-        );
-      }
-
-      const [balance, decimals, symbol] = await Promise.all([
-        client.readContract({
-          address: tokenAddress as Address,
-          abi: erc20Abi,
-          functionName: 'balanceOf',
-          args: [address as Address],
-        }),
-        client.readContract({
-          address: tokenAddress as Address,
-          abi: erc20Abi,
-          functionName: 'decimals',
-        }),
-        client.readContract({
-          address: tokenAddress as Address,
-          abi: erc20Abi,
-          functionName: 'symbol',
-        }),
-      ]);
-      return {
-        balance: formatUnits(balance, decimals),
-        symbol,
-        tokenAddress,
-        chain: config.name,
-        chainId: config.chainId,
-      };
-    } catch (error) {
-      return {
-        balance: '0',
-        symbol: 'UNKNOWN',
-        tokenAddress,
-        chain: config.name,
-        chainId: config.chainId,
-        error: error instanceof Error ? error.message : String(error),
-      };
+    const reportedChainId = await client.getChainId();
+    if (reportedChainId !== config.chainId) {
+      throw new Error(
+        `RPC chain mismatch: expected chainId ${config.chainId} (${config.name}), ` +
+          `but the RPC reported ${reportedChainId}. ` +
+          `Set ${config.chainId === 5000 ? 'MANTLE_RPC_URL' : 'ETH_RPC_URL'} to an endpoint on the correct chain.`,
+      );
     }
+
+    const [balance, decimals, symbol] = await Promise.all([
+      client.readContract({
+        address: tokenAddress as Address,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [address as Address],
+      }),
+      client.readContract({
+        address: tokenAddress as Address,
+        abi: erc20Abi,
+        functionName: 'decimals',
+      }),
+      client.readContract({
+        address: tokenAddress as Address,
+        abi: erc20Abi,
+        functionName: 'symbol',
+      }),
+    ]);
+    return {
+      balance: formatUnits(balance, decimals),
+      symbol,
+      tokenAddress,
+      chain: config.name,
+      chainId: config.chainId,
+    };
   },
 };
 
 export {
+  getAaveAtokenBalance,
   getAaveFbtcReserve,
+  getAaveUserAccount,
+  prepareAaveBorrowStablecoin,
+  prepareAaveRepayStablecoin,
   prepareAaveSupplyFbtc,
+  prepareAaveWithdrawFbtc,
 };
 
 /**
@@ -199,7 +198,12 @@ export const allTools: AnyToolDefinition[] = [
   getTokenBalance,
   getTokenInfo,
   getAaveFbtcReserve,
+  getAaveAtokenBalance,
+  getAaveUserAccount,
   prepareAaveSupplyFbtc,
+  prepareAaveWithdrawFbtc,
+  prepareAaveBorrowStablecoin,
+  prepareAaveRepayStablecoin,
 ];
 
 /**

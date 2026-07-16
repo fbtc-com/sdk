@@ -18,11 +18,12 @@ interface TransactionPromptProps {
   onSuccess?: (message: string) => void;
 }
 
-const METHOD_LABELS = {
+const METHOD_LABELS: Record<string, string> = {
   'aave.supplyFbtc': 'Supply FBTC to Aave V3 (Ethereum / Mantle)',
-} as const satisfies Record<string, string>;
-
-type MethodName = keyof typeof METHOD_LABELS;
+  'aave.withdrawFbtc': 'Withdraw FBTC from Aave V3 (Ethereum / Mantle)',
+  'aave.borrowStablecoin': 'Borrow stablecoin from Aave V3 (Ethereum / Mantle)',
+  'aave.repayStablecoin': 'Repay stablecoin on Aave V3 (Ethereum / Mantle)',
+};
 
 const SUPPORTED_CHAINS: Record<number, Chain> = {
   [mainnet.id]: mainnet,
@@ -154,7 +155,7 @@ export function TransactionPrompt({
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const label = METHOD_LABELS[method as MethodName] ?? method;
+  const label = METHOD_LABELS[method] ?? method;
 
   const handleExecute = async () => {
     if (!address) return;
@@ -188,12 +189,12 @@ export function TransactionPrompt({
         const afterSwitch = await readWalletChainId(provider);
         if (afterSwitch !== targetChainId) {
           throw new Error(
-            `Wallet is on chainId ${afterSwitch}, but this supply needs ${targetChainId} (${SUPPORTED_CHAINS[targetChainId].name}). Switch network in your wallet and retry.`,
+            `Wallet is on chainId ${afterSwitch}, but this action needs ${targetChainId} (${SUPPORTED_CHAINS[targetChainId].name}). Switch network in your wallet and retry.`,
           );
         }
       }
 
-      if (method !== 'aave.supplyFbtc') {
+      if (!METHOD_LABELS[method]) {
         throw new Error(`Unknown method: ${method}`);
       }
 
@@ -228,7 +229,7 @@ export function TransactionPrompt({
         } catch (estimateErr) {
           throw new Error(
             `Gas estimation failed for "${tx.label}" on ${SUPPORTED_CHAINS[targetChainId].name}: ${formatWalletError(estimateErr)}. ` +
-              `Check you have enough ${targetChainId === mantle.id ? 'MNT' : 'ETH'} for gas and FBTC balance on this network.`,
+              `Check you have enough ${targetChainId === mantle.id ? 'MNT' : 'ETH'} for gas and the required token balance on this network.`,
           );
         }
 
@@ -313,7 +314,7 @@ export function TransactionPrompt({
       </p>
 
       <div className="space-y-1 mb-3">
-        {method === 'aave.supplyFbtc' && Array.isArray(params.transactions)
+        {Array.isArray(params.transactions)
           ? (params.transactions as { to: string; label: string }[]).map(
               (tx, i) => (
                 <div key={i} className="flex justify-between text-xs gap-2">
@@ -351,13 +352,18 @@ export function TransactionPrompt({
       </div>
 
       {status === 'idle' && (
-        <button
-          onClick={handleExecute}
-          disabled={!address}
-          className="w-full rounded-[60px] bg-[var(--color-primary)] py-2 text-xs font-semibold text-[var(--color-black)] hover:bg-[var(--color-primary-dark)] transition-colors disabled:opacity-40"
-        >
-          {address ? 'Execute Transaction' : 'Connect Wallet to Execute'}
-        </button>
+        <>
+          <p className="text-[11px] text-[var(--color-text-muted)] mb-2">
+            Click Execute to open your wallet and sign. Signing is not automatic.
+          </p>
+          <button
+            onClick={handleExecute}
+            disabled={!address}
+            className="w-full rounded-[60px] bg-[var(--color-primary)] py-2 text-xs font-semibold text-[var(--color-black)] hover:bg-[var(--color-primary-dark)] transition-colors disabled:opacity-40"
+          >
+            {address ? 'Execute Transaction' : 'Connect Wallet to Execute'}
+          </button>
+        </>
       )}
 
       {status === 'executing' && (

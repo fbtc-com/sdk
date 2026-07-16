@@ -40,9 +40,10 @@ export function loadWalletNetworkId(): FbtcNetworkId {
 }
 
 /**
- * ViemWalletProvider builds its own publicClient with `http()` (no URL),
- * which falls back to `chain.rpcUrls.default`. Point that at the wallet
- * network's RPC so gas estimation / receipt waits don't hit flaky defaults.
+ * ViemWalletProvider builds its own publicClient with `http()` (default 10s
+ * timeout). Write actions in sdk-agentkit wait for receipts on our own
+ * publicClient instead (see waitForTxReceipt). We still point the wallet
+ * chain RPC at ETH_RPC_URL / MANTLE_RPC_URL for gas estimation / sends.
  */
 function chainWithRpc(chain: Chain, rpcUrl?: string): Chain {
   if (!rpcUrl) return chain;
