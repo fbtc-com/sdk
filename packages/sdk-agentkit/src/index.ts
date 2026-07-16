@@ -72,8 +72,8 @@ export {
   getErc20Balance,
   makeNetworkPublicClient,
   resolveRpcUrl,
-  type RpcUrlByNetwork,
   RPC_HTTP_TIMEOUT_MS,
+  type RpcUrlByNetwork,
   TX_RECEIPT_TIMEOUT_MS,
   waitForTxReceipt,
 } from './utils';

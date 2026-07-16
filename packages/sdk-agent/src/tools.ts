@@ -22,8 +22,8 @@ import {
 } from './assets';
 import { getChainConfig, makePublicClient } from './chains';
 import {
-  TokenBalanceSchema,
   type TokenBalanceParams,
+  TokenBalanceSchema,
   TokenBalanceZod,
   TokenInfoSchema,
   TokenInfoZod,
